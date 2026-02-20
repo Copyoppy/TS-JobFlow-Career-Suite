@@ -389,9 +389,9 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 const ThemeToggle = ({ theme, setTheme, onNavigate }: { theme: Theme, setTheme: (t: Theme) => void, onNavigate: (v: ViewState) => void }) => {
   return (
-    <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+    <div className="hidden md:flex items-center justify-end gap-2 p-3 sticky top-0 z-50 bg-brand-rose/90 dark:bg-slate-950/90 backdrop-blur-sm">
       <NotificationBell onNavigate={onNavigate} />
-      <div className="bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-xl p-1 flex shadow-lg">
+      <div className="bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-xl p-1 flex shadow-sm">
         <button
           onClick={() => setTheme('light')}
           className={`p-2 rounded-lg transition-all ${theme === 'light' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
@@ -625,7 +625,7 @@ const App: React.FC = () => {
           <main className="flex-1 h-screen overflow-auto relative custom-scrollbar w-full">
             <ThemeToggle theme={theme} setTheme={setTheme} onNavigate={setCurrentView} />
 
-            {/* Mobile Header - High Z-index ensures menu access even over detail panels */}
+            {/* Mobile Header */}
             <div className="md:hidden p-4 flex items-center gap-3 sticky top-0 z-40 bg-brand-rose/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-brand-mint/50 dark:border-slate-800">
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -633,7 +633,8 @@ const App: React.FC = () => {
               >
                 <Menu size={20} />
               </button>
-              <span className="font-bold text-brand-deep dark:text-white">TS JobFlow</span>
+              <span className="font-bold text-brand-deep dark:text-white flex-1">TS JobFlow</span>
+              <NotificationBell onNavigate={setCurrentView} />
             </div>
 
             {renderContent()}
