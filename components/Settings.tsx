@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Job, Resume, AppSettings } from '../types';
-import { Download, Upload, Trash2, Database, AlertTriangle, CheckCircle2, ShieldCheck, BellRing, UserCircle, Lock, Eye, EyeOff, Check, Camera } from 'lucide-react';
+import { Download, Upload, Trash2, Database, AlertTriangle, CheckCircle2, ShieldCheck, BellRing, UserCircle, Lock, Eye, EyeOff, Check, Camera, FileWarning } from 'lucide-react';
 import { useToast } from './Toast';
 
 interface SettingsProps {
@@ -17,6 +17,8 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const { showToast } = useToast();
+  const [pendingAction, setPendingAction] = useState<'import' | 'reset' | null>(null);
+  const [pendingImportData, setPendingImportData] = useState<{ jobs: Job[]; resume: Resume } | null>(null);
 
   // User profile
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -98,6 +100,7 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showToast('Backup downloaded!', 'success');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,17 +112,16 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
       try {
         const json = JSON.parse(event.target?.result as string);
         if (json.jobs && json.resume) {
-          onImport({ jobs: json.jobs, resume: json.resume });
-          setImportStatus('success');
-          setTimeout(() => setImportStatus('idle'), 3000);
+          setPendingImportData({ jobs: json.jobs, resume: json.resume });
+          setPendingAction('import');
         } else {
           setImportStatus('error');
-          alert('Invalid backup file format.');
+          showToast('Invalid backup file format.', 'error');
         }
       } catch (error) {
         console.error('Import failed', error);
         setImportStatus('error');
-        alert('Failed to parse the file.');
+        showToast('Failed to parse the file.', 'error');
       }
     };
     reader.readAsText(file);
@@ -128,9 +130,21 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
   };
 
   const handleResetConfirm = () => {
-    if (window.confirm("Are you sure? This will delete all your applications and resume data and reset to the default demo data. This action cannot be undone.")) {
+    setPendingAction('reset');
+  };
+
+  const confirmPendingAction = () => {
+    if (pendingAction === 'import' && pendingImportData) {
+      onImport(pendingImportData);
+      setImportStatus('success');
+      setTimeout(() => setImportStatus('idle'), 3000);
+      showToast('Data imported successfully!', 'success');
+      setPendingImportData(null);
+    } else if (pendingAction === 'reset') {
       onReset();
+      showToast('All data has been reset.', 'info');
     }
+    setPendingAction(null);
   };
 
   return (
@@ -360,6 +374,49 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
         </div>
 
       </div>
+
+      {/* Confirmation Dialog */}
+      {pendingAction && (
+        <div className="fixed inset-0 bg-brand-deep/20 dark:bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div className="p-6 text-center">
+              <div className={`w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center ${pendingAction === 'reset' ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-amber-100 dark:bg-amber-900/30'
+                }`}>
+                {pendingAction === 'reset'
+                  ? <Trash2 size={24} className="text-rose-500" />
+                  : <FileWarning size={24} className="text-amber-500" />
+                }
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
+                {pendingAction === 'reset' ? 'Reset All Data?' : 'Import Data?'}
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {pendingAction === 'reset'
+                  ? 'This will delete all your applications, resume, and chat data and restore the default demo content. This cannot be undone.'
+                  : `This will replace all your current data with the imported backup (${pendingImportData?.jobs.length || 0} jobs). Your current data will be lost.`
+                }
+              </p>
+            </div>
+            <div className="flex border-t border-slate-100 dark:border-slate-700">
+              <button
+                onClick={() => { setPendingAction(null); setPendingImportData(null); }}
+                className="flex-1 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPendingAction}
+                className={`flex-1 py-3.5 text-sm font-bold transition border-l border-slate-100 dark:border-slate-700 ${pendingAction === 'reset'
+                    ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20'
+                    : 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                  }`}
+              >
+                {pendingAction === 'reset' ? 'Reset' : 'Import'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
