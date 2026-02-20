@@ -236,10 +236,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-50 flex items-center justify-center z-[100] p-4 font-sans overflow-hidden">
+        <div className="fixed inset-0 bg-slate-50 dark:bg-slate-950 flex items-center justify-center z-[100] p-4 font-sans overflow-hidden">
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            <div className="bg-white w-full max-w-md max-h-[95vh] sm:max-h-[90vh] rounded-3xl sm:rounded-[48px] shadow-2xl relative flex flex-col overflow-hidden border border-slate-100">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[95vh] sm:max-h-[90vh] rounded-3xl sm:rounded-[48px] shadow-2xl relative flex flex-col overflow-hidden border border-slate-100 dark:border-slate-800">
 
                 {/* Top Logo */}
                 <div className="p-5 sm:p-8 pb-0 z-20">
@@ -266,22 +266,22 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                 Back to Sign In
                             </button>
                         )}
-                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight tracking-tight">
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">
                             {titles[mode].heading}
                         </h2>
-                        <p className="text-slate-400 text-sm sm:text-base mt-1">
+                        <p className="text-slate-400 dark:text-slate-500 text-sm sm:text-base mt-1">
                             {titles[mode].sub}
                         </p>
                     </div>
 
                     {/* Tab Switcher (login/register only) */}
                     {mode !== 'reset' && (
-                        <div className="flex mx-5 sm:mx-10 mt-5 bg-slate-100 rounded-2xl p-1">
+                        <div className="flex mx-5 sm:mx-10 mt-5 bg-slate-100 dark:bg-slate-800 rounded-2xl p-1">
                             <button
                                 onClick={() => switchMode('login')}
                                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'login'
-                                    ? 'bg-white text-brand-primary shadow-sm'
-                                    : 'text-slate-400 hover:text-slate-600'
+                                    ? 'bg-white dark:bg-slate-700 text-brand-primary shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
                                 Sign In
@@ -289,8 +289,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                             <button
                                 onClick={() => switchMode('register')}
                                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register'
-                                    ? 'bg-white text-brand-primary shadow-sm'
-                                    : 'text-slate-400 hover:text-slate-600'
+                                    ? 'bg-white dark:bg-slate-700 text-brand-primary shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
                                 Sign Up
@@ -316,7 +316,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                     <button
                                         type="button"
                                         onClick={() => photoInputRef.current?.click()}
-                                        className="w-20 h-20 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 hover:border-brand-primary flex items-center justify-center overflow-hidden transition-all group relative"
+                                        className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-brand-primary flex items-center justify-center overflow-hidden transition-all group relative"
                                     >
                                         {profilePhoto ? (
                                             <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
@@ -333,7 +333,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Full Name</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Full Name</label>
                                     <div className="relative">
                                         <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                         <input
@@ -341,7 +341,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
                                             placeholder="Kingsford Johnson"
-                                            className={`w-full pl-11 pr-4 py-3 rounded-xl border ${errors.fullName ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                            className={`w-full pl-11 pr-4 py-3 rounded-xl border ${errors.fullName ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'} text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
                                         />
                                     </div>
                                     {errors.fullName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.fullName}</p>}
@@ -352,7 +352,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                         {/* Email */}
                         {(mode !== 'reset' || resetStep === 'email') && (
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Email</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Email</label>
                                 <div className="relative">
                                     <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                     <input
@@ -360,7 +360,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="you@example.com"
-                                        className={`w-full pl-11 pr-4 py-3 rounded-xl border ${errors.email ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                        className={`w-full pl-11 pr-4 py-3 rounded-xl border ${errors.email ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'} text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
                                     />
                                 </div>
                                 {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
@@ -370,7 +370,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                         {/* Password (login & register) */}
                         {mode !== 'reset' && (
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Password</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Password</label>
                                 <div className="relative">
                                     <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                     <input
@@ -378,7 +378,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
-                                        className={`w-full pl-11 pr-11 py-3 rounded-xl border ${errors.password ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                        className={`w-full pl-11 pr-11 py-3 rounded-xl border ${errors.password ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'} text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
                                     />
                                     <button
                                         type="button"
@@ -395,7 +395,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                         {/* Confirm Password (register only) */}
                         {mode === 'register' && (
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Confirm Password</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">Confirm Password</label>
                                 <div className="relative">
                                     <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                     <input
@@ -403,7 +403,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         placeholder="••••••••"
-                                        className={`w-full pl-11 pr-11 py-3 rounded-xl border ${errors.confirmPassword ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                        className={`w-full pl-11 pr-11 py-3 rounded-xl border ${errors.confirmPassword ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'} text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
                                     />
                                     <button
                                         type="button"
@@ -420,7 +420,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                         {/* New Password (reset step 2) */}
                         {mode === 'reset' && resetStep === 'newpass' && (
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">New Password</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 block">New Password</label>
                                 <div className="relative">
                                     <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                     <input
@@ -428,7 +428,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         placeholder="••••••••"
-                                        className={`w-full pl-11 pr-11 py-3 rounded-xl border ${errors.newPassword ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                        className={`w-full pl-11 pr-11 py-3 rounded-xl border ${errors.newPassword ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700'} text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
                                     />
                                     <button
                                         type="button"
@@ -475,7 +475,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
 
                         {/* Bottom Links */}
                         {mode === 'login' && (
-                            <p className="text-center text-sm text-slate-400 mt-2">
+                            <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-2">
                                 Don't have an account?{' '}
                                 <button type="button" onClick={() => switchMode('register')} className="text-brand-primary font-bold hover:underline">
                                     Sign Up
@@ -483,7 +483,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                             </p>
                         )}
                         {mode === 'register' && (
-                            <p className="text-center text-sm text-slate-400 mt-2">
+                            <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-2">
                                 Already have an account?{' '}
                                 <button type="button" onClick={() => switchMode('login')} className="text-brand-primary font-bold hover:underline">
                                     Sign In
@@ -494,12 +494,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                 </div>
 
                 {/* Dots / Progress indicator */}
-                <div className="px-5 sm:px-10 pb-5 sm:pb-8 relative z-10 bg-white">
+                <div className="px-5 sm:px-10 pb-5 sm:pb-8 relative z-10 bg-white dark:bg-slate-900">
                     <div className="flex gap-2 justify-start">
                         {['login', 'register', 'reset'].map((m) => (
                             <div
                                 key={m}
-                                className={`h-1.5 transition-all duration-300 rounded-full ${m === mode ? 'w-8 bg-brand-primary' : 'w-2 bg-slate-200'}`}
+                                className={`h-1.5 transition-all duration-300 rounded-full ${m === mode ? 'w-8 bg-brand-primary' : 'w-2 bg-slate-200 dark:bg-slate-700'}`}
                             />
                         ))}
                     </div>

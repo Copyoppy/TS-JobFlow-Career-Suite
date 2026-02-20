@@ -102,6 +102,10 @@ export interface Job {
   // Reminder Features
   followUpDate?: string;
   interviewDate?: string; // ISO DateTime string
+
+  // User-added metadata
+  applicationUrl?: string;
+  notes?: string;
 }
 
 export interface ResumeSection {

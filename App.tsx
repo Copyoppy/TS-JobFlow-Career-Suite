@@ -488,8 +488,14 @@ const App: React.FC = () => {
     }
   });
 
-  // Chat State
+  // Chat State — persisted to localStorage
   const [ntimMessages, setNtimMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem('jobflow_ntim_messages');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse chat messages from local storage", e);
+    }
     return MOCK_MESSAGES;
   });
 
@@ -529,6 +535,15 @@ const App: React.FC = () => {
       console.error("Failed to save resume to local storage", e);
     }
   }, [resume]);
+
+  // Save chat messages to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('jobflow_ntim_messages', JSON.stringify(ntimMessages));
+    } catch (e) {
+      console.error("Failed to save chat messages to local storage", e);
+    }
+  }, [ntimMessages]);
 
   // Clear unread badge when viewing Ntim
   useEffect(() => {

@@ -151,6 +151,34 @@ const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName }) =
     });
   };
 
+  // Empty state for new users
+  if (jobs.length === 0) {
+    return (
+      <div className="p-4 md:p-8 max-w-[1600px] mx-auto pt-16 md:pt-8 flex items-center justify-center min-h-[70vh]">
+        <div className="text-center max-w-md space-y-6">
+          <div className="w-24 h-24 mx-auto bg-brand-rose dark:bg-slate-800 rounded-full flex items-center justify-center">
+            <span className="text-5xl">🚀</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-brand-deep dark:text-white mb-2">Start Your Job Search Journey</h1>
+            <p className="text-slate-500 dark:text-slate-400">Track applications, manage offers, and let AI supercharge your career moves.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onClick={() => onViewChange(ViewState.JOBS)} className="bg-brand-primary text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-deep transition shadow-lg shadow-brand-primary/20 flex items-center justify-center gap-2">
+              <PlusCircle size={18} /> Add Your First Job
+            </button>
+            <button onClick={() => onViewChange(ViewState.RESUME)} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-6 py-3 rounded-xl font-medium border border-brand-mint dark:border-slate-700 hover:bg-brand-rose dark:hover:bg-slate-700 transition flex items-center justify-center gap-2">
+              <FileText size={18} /> Build Resume
+            </button>
+            <button onClick={() => onViewChange(ViewState.NTIM)} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-6 py-3 rounded-xl font-medium border border-brand-mint dark:border-slate-700 hover:bg-brand-rose dark:hover:bg-slate-700 transition flex items-center justify-center gap-2">
+              <MessageSquare size={18} /> Chat with Ntim
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto pt-16 md:pt-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -246,8 +274,8 @@ const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName }) =
                       key={range}
                       onClick={() => setTimeRange(range)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeRange === range
-                          ? 'bg-white dark:bg-slate-600 text-brand-deep dark:text-white shadow-sm'
-                          : 'text-slate-400 hover:text-brand-deep dark:hover:text-white'
+                        ? 'bg-white dark:bg-slate-600 text-brand-deep dark:text-white shadow-sm'
+                        : 'text-slate-400 hover:text-brand-deep dark:hover:text-white'
                         }`}
                     >
                       {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Time'}

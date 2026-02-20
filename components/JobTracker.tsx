@@ -16,11 +16,13 @@ import {
   Plus, Search, MapPin, DollarSign, Calendar, ChevronRight, X, Loader2, Sparkles, Download,
   Trash2, CheckCircle2, FileText, BookOpen, LayoutGrid, List, MoreHorizontal, Target,
   ShieldAlert, XCircle, Send, Mic, MicOff, PlayCircle, BarChart3, Users, DollarSignIcon, Copy, Check, ArrowRight,
-  RefreshCw, Trophy, Scale, ExternalLink, GraduationCap, Bell, CalendarClock, CalendarPlus, BellRing, AlertCircle, Clock
+  RefreshCw, Trophy, Scale, ExternalLink, GraduationCap, Bell, CalendarClock, CalendarPlus, BellRing, AlertCircle, Clock,
+  Link2
 } from 'lucide-react';
 import { ATSGauge, parseBold, FormattedDisplay } from './JobTrackerHelpers';
 import AddJobModal from './AddJobModal';
 import CompareOffersModal from './CompareOffersModal';
+import { useToast } from './Toast';
 
 interface JobTrackerProps {
   jobs: Job[];
@@ -42,8 +44,10 @@ const KANBAN_COLUMNS = [
 ];
 
 const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings }) => {
+  const { showToast } = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'networking' | 'practice'>('overview');
 
   // Feature State: Offer Comparison
@@ -163,8 +167,16 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
 
   const handleDeleteJob = (jobId: string, e?: React.MouseEvent) => {
     if (e) { e.stopPropagation(); e.preventDefault(); }
-    setJobs(prev => prev.filter(job => job.id !== jobId));
-    if (selectedJob?.id === jobId) setSelectedJob(null);
+    setPendingDeleteId(jobId);
+  };
+
+  const confirmDeleteJob = () => {
+    if (!pendingDeleteId) return;
+    const job = jobs.find(j => j.id === pendingDeleteId);
+    setJobs(prev => prev.filter(j => j.id !== pendingDeleteId));
+    if (selectedJob?.id === pendingDeleteId) setSelectedJob(null);
+    setPendingDeleteId(null);
+    if (job) showToast(`Deleted ${job.role} at ${job.company}`, 'info');
   };
 
   const handleStatusChange = (jobId: string, newStatusStr: string) => {
@@ -226,7 +238,8 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       const resumeText = JSON.stringify(resume);
       const result = await analyzeResumeMatch(resumeText, selectedJob.description);
       updateSelectedJob(j => ({ ...j, atsAnalysis: result }));
-    } catch (e) { alert("Analysis failed"); } finally { setLoadingFeature(null); }
+      showToast('ATS analysis complete!', 'success');
+    } catch (e) { showToast('Analysis failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
   };
 
   const handleTailorResume = async () => {
@@ -236,7 +249,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       const resumeText = JSON.stringify(resume);
       const result = await tailorResumeToJob(resumeText, selectedJob.description);
       setTailoredResumeData(result);
-    } catch (e) { alert("Tailoring failed"); } finally { setLoadingFeature(null); }
+    } catch (e) { showToast('Resume tailoring failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
   };
 
   const handleGenerateRoadmap = async () => {
@@ -245,7 +258,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
     try {
       const roadmap = await generateLearningRoadmap(selectedJob.atsAnalysis.missingKeywords, selectedJob.role);
       updateSelectedJob(j => ({ ...j, learningRoadmap: roadmap }));
-    } catch (e) { alert("Roadmap generation failed"); } finally { setLoadingFeature(null); }
+    } catch (e) { showToast('Roadmap generation failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
   };
 
   const handleApplyTailoredResume = async () => {
@@ -272,7 +285,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       updateSelectedJob(j => ({ ...j, atsAnalysis: result }));
     } catch (e) {
       console.error("Re-analysis failed", e);
-      alert("Resume updated, but failed to re-check score automatically.");
+      showToast('Resume updated, but failed to re-check score automatically.', 'error');
     } finally {
       setLoadingFeature(null);
     }
@@ -284,7 +297,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
     try {
       const result = await detectJobRedFlags(selectedJob.description);
       updateSelectedJob(j => ({ ...j, redFlags: result }));
-    } catch (e) { alert("Scan failed"); } finally { setLoadingFeature(null); }
+    } catch (e) { showToast('Red flag scan failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
   };
 
   const handleGenerateNetworking = async (hmName: string) => {
@@ -293,7 +306,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
     try {
       const result = await generateNetworkingDrafts(selectedJob.company, selectedJob.role, hmName, resume.summary);
       updateSelectedJob(j => ({ ...j, networking: result }));
-    } catch (e) { alert("Draft generation failed"); } finally { setLoadingFeature(null); }
+    } catch (e) { showToast('Draft generation failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
   };
 
   const handleNegotiate = async (offerAmount: string) => {
@@ -309,7 +322,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       updateSelectedJob(j => ({ ...j, negotiation: result }));
     } catch (error) {
       console.error("Negotiation advice generation failed:", error);
-      alert("Failed to generate negotiation advice. Please try again.");
+      showToast('Failed to generate negotiation advice. Please try again.', 'error');
     } finally {
       setLoadingFeature(null);
     }
@@ -317,7 +330,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
 
   const handleStartRecording = (question: string) => {
     if (!recognition) {
-      alert("Microphone not supported in this browser. Please use Chrome/Edge.");
+      showToast('Microphone not supported in this browser. Please use Chrome/Edge.', 'error');
       return;
     }
     setIsRecording(true);
@@ -339,13 +352,13 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
           timestamp: Date.now()
         };
         updateSelectedJob(j => ({ ...j, interviewPractice: [...(j.interviewPractice || []), newEntry] }));
-      } catch (e) { alert("Feedback failed"); } finally { setLoadingFeature(null); }
+      } catch (e) { showToast('Interview feedback failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
     };
 
     recognition.onerror = (event: any) => {
       console.error(event.error);
       setIsRecording(false);
-      alert("Microphone error: " + event.error);
+      showToast('Microphone error: ' + event.error, 'error');
     };
   };
 
@@ -364,7 +377,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
     try {
       const result = await compareJobOffers(job1, job2);
       setComparisonResult(result);
-    } catch (e) { alert("Comparison failed"); } finally { setLoadingFeature(null); }
+    } catch (e) { showToast('Offer comparison failed. Please try again.', 'error'); } finally { setLoadingFeature(null); }
   };
 
   // --- Drag & Drop ---
@@ -669,6 +682,38 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
                   <div>
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2 mt-4">Description</h3>
                     <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700">{selectedJob.description || 'No description provided.'}</p>
+                  </div>
+
+                  {/* Application URL */}
+                  {selectedJob.applicationUrl && (
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                      <Link2 size={16} className="text-brand-primary flex-shrink-0" />
+                      <a
+                        href={selectedJob.applicationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-primary hover:text-brand-deep truncate underline underline-offset-2"
+                      >
+                        {selectedJob.applicationUrl}
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2 mt-2">Notes</h3>
+                    <textarea
+                      defaultValue={selectedJob.notes || ''}
+                      onBlur={(e) => {
+                        const val = e.target.value;
+                        if (val !== (selectedJob.notes || '')) {
+                          updateSelectedJob(j => ({ ...j, notes: val }));
+                          showToast('Notes saved', 'success');
+                        }
+                      }}
+                      placeholder="Add personal notes about this position..."
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 resize-none h-28 outline-none focus:ring-2 focus:ring-brand-primary/30 transition placeholder-slate-400 dark:placeholder-slate-500"
+                    />
                   </div>
 
                   {/* Negotiation Section (Only if Offer) */}
@@ -1104,6 +1149,40 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
           onClose={() => setShowAddModal(false)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      {pendingDeleteId && (() => {
+        const jobToDelete = jobs.find(j => j.id === pendingDeleteId);
+        return (
+          <div className="fixed inset-0 bg-brand-deep/20 dark:bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-rose-200 dark:border-slate-700">
+              <div className="p-6 text-center">
+                <div className="w-14 h-14 mx-auto mb-4 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center">
+                  <Trash2 size={24} className="text-rose-500" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Delete Job?</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Are you sure you want to delete <strong className="text-slate-700 dark:text-slate-200">{jobToDelete?.role}</strong> at <strong className="text-slate-700 dark:text-slate-200">{jobToDelete?.company}</strong>? This can't be undone.
+                </p>
+              </div>
+              <div className="flex border-t border-slate-100 dark:border-slate-700">
+                <button
+                  onClick={() => setPendingDeleteId(null)}
+                  className="flex-1 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteJob}
+                  className="flex-1 py-3.5 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition border-l border-slate-100 dark:border-slate-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
