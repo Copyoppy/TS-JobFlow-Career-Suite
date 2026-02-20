@@ -90,7 +90,7 @@ export interface Job {
   interviewGuide?: string;
   email: string;
   origin?: 'application' | 'offer';
-  
+
   // New AI Feature Fields
   atsAnalysis?: AnalysisResult;
   learningRoadmap?: LearningDay[]; // New field for Roadmap
@@ -98,7 +98,7 @@ export interface Job {
   networking?: NetworkingDrafts;
   negotiation?: NegotiationAdvice;
   interviewPractice?: InterviewFeedback[];
-  
+
   // Reminder Features
   followUpDate?: string;
   interviewDate?: string; // ISO DateTime string
@@ -137,6 +137,19 @@ export interface Message {
   id: string;
   role: 'user' | 'model';
   text: string;
+}
+
+export type NotificationType = 'interview_reminder' | 'followup_due' | 'followup_overdue' | 'status_change' | 'info';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  jobId?: string;
+  actionView?: ViewState;
 }
 
 export enum ViewState {

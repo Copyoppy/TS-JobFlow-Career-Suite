@@ -10,6 +10,8 @@ import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
 import AuthScreen from './components/AuthScreen';
 import { ToastProvider } from './components/Toast';
+import { NotificationProvider } from './components/NotificationContext';
+import NotificationBell from './components/NotificationBell';
 import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings } from './types';
 import { Menu, Sun, Moon, Monitor } from 'lucide-react';
 
@@ -385,30 +387,33 @@ const DEFAULT_SETTINGS: AppSettings = {
   reminderTiming: 15 // Default to 15 minutes
 };
 
-const ThemeToggle = ({ theme, setTheme }: { theme: Theme, setTheme: (t: Theme) => void }) => {
+const ThemeToggle = ({ theme, setTheme, onNavigate }: { theme: Theme, setTheme: (t: Theme) => void, onNavigate: (v: ViewState) => void }) => {
   return (
-    <div className="absolute top-4 right-4 z-50 bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-xl p-1 flex shadow-lg">
-      <button
-        onClick={() => setTheme('light')}
-        className={`p-2 rounded-lg transition-all ${theme === 'light' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
-        title="Light Mode"
-      >
-        <Sun size={16} />
-      </button>
-      <button
-        onClick={() => setTheme('dark')}
-        className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
-        title="Dark Mode"
-      >
-        <Moon size={16} />
-      </button>
-      <button
-        onClick={() => setTheme('system')}
-        className={`p-2 rounded-lg transition-all ${theme === 'system' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
-        title="System Default"
-      >
-        <Monitor size={16} />
-      </button>
+    <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+      <NotificationBell onNavigate={onNavigate} />
+      <div className="bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-xl p-1 flex shadow-lg">
+        <button
+          onClick={() => setTheme('light')}
+          className={`p-2 rounded-lg transition-all ${theme === 'light' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
+          title="Light Mode"
+        >
+          <Sun size={16} />
+        </button>
+        <button
+          onClick={() => setTheme('dark')}
+          className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
+          title="Dark Mode"
+        >
+          <Moon size={16} />
+        </button>
+        <button
+          onClick={() => setTheme('system')}
+          className={`p-2 rounded-lg transition-all ${theme === 'system' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
+          title="System Default"
+        >
+          <Monitor size={16} />
+        </button>
+      </div>
     </div>
   );
 };
@@ -605,34 +610,36 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className="flex h-screen bg-brand-rose dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-200">
-        <Sidebar
-          currentView={currentView}
-          onChangeView={setCurrentView}
-          hasUnreadMessages={unreadNtim}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          userName={userName}
-          onLogout={() => setShowAuth(true)}
-        />
+      <NotificationProvider jobs={jobs} settings={settings}>
+        <div className="flex h-screen bg-brand-rose dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-200">
+          <Sidebar
+            currentView={currentView}
+            onChangeView={setCurrentView}
+            hasUnreadMessages={unreadNtim}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            userName={userName}
+            onLogout={() => setShowAuth(true)}
+          />
 
-        <main className="flex-1 h-screen overflow-auto relative custom-scrollbar w-full">
-          <ThemeToggle theme={theme} setTheme={setTheme} />
+          <main className="flex-1 h-screen overflow-auto relative custom-scrollbar w-full">
+            <ThemeToggle theme={theme} setTheme={setTheme} onNavigate={setCurrentView} />
 
-          {/* Mobile Header - High Z-index ensures menu access even over detail panels */}
-          <div className="md:hidden p-4 flex items-center gap-3 sticky top-0 z-40 bg-brand-rose/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-brand-mint/50 dark:border-slate-800">
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="p-2 bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-800 rounded-lg text-brand-deep dark:text-white shadow-sm active:bg-brand-mint/50"
-            >
-              <Menu size={20} />
-            </button>
-            <span className="font-bold text-brand-deep dark:text-white">TS JobFlow</span>
-          </div>
+            {/* Mobile Header - High Z-index ensures menu access even over detail panels */}
+            <div className="md:hidden p-4 flex items-center gap-3 sticky top-0 z-40 bg-brand-rose/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-brand-mint/50 dark:border-slate-800">
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-800 rounded-lg text-brand-deep dark:text-white shadow-sm active:bg-brand-mint/50"
+              >
+                <Menu size={20} />
+              </button>
+              <span className="font-bold text-brand-deep dark:text-white">TS JobFlow</span>
+            </div>
 
-          {renderContent()}
-        </main>
-      </div>
+            {renderContent()}
+          </main>
+        </div>
+      </NotificationProvider>
     </ToastProvider>
   );
 };
