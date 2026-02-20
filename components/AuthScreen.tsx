@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, ChevronRight, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Mail, Lock, User, Eye, EyeOff, ChevronRight, ArrowLeft, CheckCircle, AlertCircle, Camera } from 'lucide-react';
 
 interface AuthScreenProps {
     onComplete: (userName: string) => void;
@@ -12,6 +12,7 @@ interface StoredUser {
     fullName: string;
     email: string;
     password: string;
+    profilePhoto?: string;
 }
 
 const Logo = () => (
@@ -52,8 +53,24 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [profilePhoto, setProfilePhoto] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [resetStep, setResetStep] = useState<'email' | 'newpass'>('email');
+    const photoInputRef = useRef<HTMLInputElement>(null);
+
+    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            setToast({ message: 'Image must be under 2MB', type: 'error' });
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setProfilePhoto(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
 
     const validate = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -87,6 +104,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
         setPassword('');
         setConfirmPassword('');
         setNewPassword('');
+        setProfilePhoto('');
         setErrors({});
         setShowPassword(false);
         setShowConfirmPassword(false);
@@ -113,7 +131,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
         const user: StoredUser = {
             fullName: fullName.trim(),
             email: email.toLowerCase().trim(),
-            password: password
+            password: password,
+            profilePhoto: profilePhoto || undefined
         };
         localStorage.setItem('jobflow_user', JSON.stringify(user));
 
@@ -261,8 +280,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                             <button
                                 onClick={() => switchMode('login')}
                                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'login'
-                                        ? 'bg-white text-brand-primary shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600'
+                                    ? 'bg-white text-brand-primary shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Sign In
@@ -270,8 +289,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                             <button
                                 onClick={() => switchMode('register')}
                                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'register'
-                                        ? 'bg-white text-brand-primary shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600'
+                                    ? 'bg-white text-brand-primary shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600'
                                     }`}
                             >
                                 Sign Up
@@ -282,22 +301,52 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onComplete }) => {
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="px-5 sm:px-10 pt-5 pb-6 sm:pb-8 flex flex-col gap-3">
 
-                        {/* Full Name (register only) */}
+                        {/* Profile Photo + Full Name (register only) */}
                         {mode === 'register' && (
-                            <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Full Name</label>
-                                <div className="relative">
-                                    <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                            <>
+                                {/* Photo Upload */}
+                                <div className="flex flex-col items-center mb-2">
                                     <input
-                                        type="text"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        placeholder="Kingsford Johnson"
-                                        className={`w-full pl-11 pr-4 py-3 rounded-xl border ${errors.fullName ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                        ref={photoInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handlePhotoUpload}
+                                        className="hidden"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => photoInputRef.current?.click()}
+                                        className="w-20 h-20 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 hover:border-brand-primary flex items-center justify-center overflow-hidden transition-all group relative"
+                                    >
+                                        {profilePhoto ? (
+                                            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Camera size={24} className="text-slate-400 group-hover:text-brand-primary transition-colors" />
+                                        )}
+                                        {profilePhoto && (
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                                <Camera size={18} className="text-white" />
+                                            </div>
+                                        )}
+                                    </button>
+                                    <span className="text-xs text-slate-400 mt-1.5">Upload photo</span>
                                 </div>
-                                {errors.fullName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.fullName}</p>}
-                            </div>
+
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Full Name</label>
+                                    <div className="relative">
+                                        <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                                        <input
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            placeholder="Kingsford Johnson"
+                                            className={`w-full pl-11 pr-4 py-3 rounded-xl border ${errors.fullName ? 'border-red-300 bg-red-50/50' : 'border-slate-200'} text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all`}
+                                        />
+                                    </div>
+                                    {errors.fullName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.fullName}</p>}
+                                </div>
+                            </>
                         )}
 
                         {/* Email */}

@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Job, Resume, AppSettings } from '../types';
-import { Download, Upload, Trash2, Database, AlertTriangle, CheckCircle2, ShieldCheck, BellRing, UserCircle, Lock, Eye, EyeOff, Check } from 'lucide-react';
+import { Download, Upload, Trash2, Database, AlertTriangle, CheckCircle2, ShieldCheck, BellRing, UserCircle, Lock, Eye, EyeOff, Check, Camera } from 'lucide-react';
 import { useToast } from './Toast';
 
 interface SettingsProps {
@@ -56,6 +56,30 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
     setCurrentPassword('');
     setNewPassword('');
     setPassError('');
+  };
+
+  const photoUploadRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image must be under 2MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      if (storedUser) {
+        storedUser.profilePhoto = base64;
+        localStorage.setItem('jobflow_user', JSON.stringify(storedUser));
+        showToast('Profile photo updated!');
+        // Force re-render
+        window.dispatchEvent(new Event('storage'));
+      }
+    };
+    reader.readAsDataURL(file);
+    if (photoUploadRef.current) photoUploadRef.current.value = '';
   };
 
   const handleExport = () => {
@@ -130,9 +154,28 @@ const Settings: React.FC<SettingsProps> = ({ jobs, resume, onImport, onReset, se
             </div>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-brand-primary rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-brand-primary/20">
-                  {userInitials}
-                </div>
+                <input
+                  ref={photoUploadRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => photoUploadRef.current?.click()}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg shadow-brand-primary/20 relative group flex-shrink-0"
+                >
+                  {storedUser.profilePhoto ? (
+                    <img src={storedUser.profilePhoto} alt={storedUser.fullName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-brand-primary flex items-center justify-center text-white text-xl font-bold">
+                      {userInitials}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
+                    <Camera size={16} className="text-white" />
+                  </div>
+                </button>
                 <div>
                   <h3 className="font-bold text-lg text-slate-800 dark:text-white">{storedUser.fullName}</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400">{storedUser.email}</p>

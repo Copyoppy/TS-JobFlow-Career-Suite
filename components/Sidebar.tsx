@@ -61,6 +61,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  const userPhoto = (() => {
+    try {
+      const u = localStorage.getItem('jobflow_user');
+      return u ? JSON.parse(u).profilePhoto : null;
+    } catch { return null; }
+  })();
   const mainNavItems = [
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.JOBS, label: 'My Applications', icon: Briefcase },
@@ -187,9 +194,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
           {/* User Profile */}
           {userName && (
             <div className="flex items-center gap-3 px-4 py-3 mb-2">
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {initials}
-              </div>
+              {userPhoto ? (
+                <img src={userPhoto} alt={userName} className="w-8 h-8 rounded-full object-cover ring-2 ring-white/20" />
+              ) : (
+                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {initials}
+                </div>
+              )}
               <span className="text-sm text-blue-50 font-medium truncate">{userName}</span>
             </div>
           )}
