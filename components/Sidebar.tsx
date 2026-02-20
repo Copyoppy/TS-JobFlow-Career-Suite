@@ -8,6 +8,8 @@ interface SidebarProps {
   hasUnreadMessages?: boolean;
   isOpen: boolean;
   onClose: () => void;
+  userName?: string;
+  onLogout?: () => void;
 }
 
 // Custom Icon for Ntim (Friendly Male/Neutral Avatar)
@@ -41,13 +43,24 @@ const NtimIcon = ({ className, size = 20 }: { className?: string; size?: number 
   </svg>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadMessages = false, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadMessages = false, isOpen, onClose, userName = '', onLogout }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
-    localStorage.clear();
-    window.location.reload();
+    localStorage.removeItem('jobflow_authenticated');
+    if (onLogout) {
+      onLogout();
+    } else {
+      window.location.reload();
+    }
   };
+
+  const initials = userName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
   const mainNavItems = [
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.JOBS, label: 'My Applications', icon: Briefcase },
@@ -138,8 +151,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group font-medium ${isActive
-                    ? 'bg-white text-brand-primary shadow-lg shadow-black/10'
-                    : 'text-blue-50 hover:bg-white/10 hover:text-white'
+                  ? 'bg-white text-brand-primary shadow-lg shadow-black/10'
+                  : 'text-blue-50 hover:bg-white/10 hover:text-white'
                   }`}
               >
                 <Icon size={20} className={isActive ? 'text-brand-primary' : 'text-blue-200 group-hover:text-white'} />
@@ -155,10 +168,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
             <button
               onClick={() => handleNavClick(ViewState.NTIM)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group font-medium ${currentView === ViewState.NTIM
-                  ? 'bg-white text-brand-deep shadow-lg shadow-black/5'
-                  : hasUnreadMessages
-                    ? 'bg-white text-brand-deep shadow-lg ntim-notify-blink' // Active looking style for unread
-                    : 'text-blue-50 hover:bg-white/10 hover:text-white'
+                ? 'bg-white text-brand-deep shadow-lg shadow-black/5'
+                : hasUnreadMessages
+                  ? 'bg-white text-brand-deep shadow-lg ntim-notify-blink' // Active looking style for unread
+                  : 'text-blue-50 hover:bg-white/10 hover:text-white'
                 }`}
             >
               <NtimIcon size={20} className={currentView === ViewState.NTIM || hasUnreadMessages ? 'text-brand-deep' : 'text-blue-200 group-hover:text-white'} />
@@ -171,11 +184,20 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
         </nav>
 
         <div className="p-4 border-t border-white/10 mt-auto bg-brand-deep/10">
+          {/* User Profile */}
+          {userName && (
+            <div className="flex items-center gap-3 px-4 py-3 mb-2">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                {initials}
+              </div>
+              <span className="text-sm text-blue-50 font-medium truncate">{userName}</span>
+            </div>
+          )}
           <button
             onClick={() => handleNavClick(ViewState.SETTINGS)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${currentView === ViewState.SETTINGS
-                ? 'bg-white text-brand-primary'
-                : 'text-blue-100 hover:bg-white/10 hover:text-white'
+              ? 'bg-white text-brand-primary'
+              : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
           >
             <Settings size={18} />

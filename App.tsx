@@ -8,6 +8,7 @@ import AvatarGenerator from './components/AvatarGenerator';
 import NtimChat from './components/ClaireChat';
 import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
+import AuthScreen from './components/AuthScreen';
 import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings } from './types';
 import { Menu, Sun, Moon, Monitor } from 'lucide-react';
 
@@ -386,21 +387,21 @@ const DEFAULT_SETTINGS: AppSettings = {
 const ThemeToggle = ({ theme, setTheme }: { theme: Theme, setTheme: (t: Theme) => void }) => {
   return (
     <div className="absolute top-4 right-4 z-50 bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-xl p-1 flex shadow-lg">
-      <button 
+      <button
         onClick={() => setTheme('light')}
         className={`p-2 rounded-lg transition-all ${theme === 'light' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
         title="Light Mode"
       >
         <Sun size={16} />
       </button>
-      <button 
+      <button
         onClick={() => setTheme('dark')}
         className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
         title="Dark Mode"
       >
         <Moon size={16} />
       </button>
-      <button 
+      <button
         onClick={() => setTheme('system')}
         className={`p-2 rounded-lg transition-all ${theme === 'system' ? 'bg-brand-rose dark:bg-slate-700 text-brand-primary' : 'text-slate-400 hover:text-brand-deep dark:hover:text-slate-200'}`}
         title="System Default"
@@ -418,7 +419,16 @@ const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     return localStorage.getItem('jobflow_onboarding_seen') !== 'true';
   });
-  
+  const [showAuth, setShowAuth] = useState<boolean>(() => {
+    return localStorage.getItem('jobflow_authenticated') !== 'true';
+  });
+  const [userName, setUserName] = useState<string>(() => {
+    try {
+      const user = localStorage.getItem('jobflow_user');
+      return user ? JSON.parse(user).fullName : '';
+    } catch { return ''; }
+  });
+
   // Settings State
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
@@ -464,7 +474,7 @@ const App: React.FC = () => {
   const [ntimMessages, setNtimMessages] = useState<Message[]>(() => {
     return MOCK_MESSAGES;
   });
-  
+
   const [unreadNtim, setUnreadNtim] = useState(false);
 
   // Resume State, fallback to MOCK_RESUME
@@ -517,7 +527,7 @@ const App: React.FC = () => {
     // Only trigger notification if status is Accepted or Rejected
     if (newStatus === JobStatus.ACCEPTED || newStatus === JobStatus.REJECTED) {
       let messageText = '';
-      
+
       if (newStatus === JobStatus.ACCEPTED) {
         messageText = `🎉 Congratulations! I noticed you accepted an offer for the **${job.role}** position at **${job.company}**! That is absolutely fantastic news! Do you need any tips on salary negotiation or preparing for your first day?`;
       } else if (newStatus === JobStatus.REJECTED) {
@@ -530,9 +540,9 @@ const App: React.FC = () => {
           role: 'model',
           text: messageText
         };
-        
+
         setNtimMessages(prev => [...prev, newMessage]);
-        
+
         // Mark as unread if not currently in chat view
         if (currentView !== ViewState.NTIM) {
           setUnreadNtim(true);
@@ -540,12 +550,12 @@ const App: React.FC = () => {
       }
     }
   };
-  
+
   const handleImportData = (data: { jobs: Job[]; resume: Resume }) => {
     if (data.jobs) setJobs(data.jobs);
     if (data.resume) setResume(data.resume);
   };
-  
+
   const handleResetData = () => {
     setJobs(MOCK_JOBS);
     setResume(MOCK_RESUME);
@@ -556,6 +566,11 @@ const App: React.FC = () => {
   const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
     localStorage.setItem('jobflow_onboarding_seen', 'true');
+  };
+
+  const handleAuthComplete = (name: string) => {
+    setUserName(name);
+    setShowAuth(false);
   };
 
   const renderContent = () => {
@@ -583,28 +598,34 @@ const App: React.FC = () => {
     return <Onboarding onComplete={handleCompleteOnboarding} />;
   }
 
+  if (showAuth) {
+    return <AuthScreen onComplete={handleAuthComplete} />;
+  }
+
   return (
     <div className="flex h-screen bg-brand-rose dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-200">
-      <Sidebar 
-        currentView={currentView} 
-        onChangeView={setCurrentView} 
+      <Sidebar
+        currentView={currentView}
+        onChangeView={setCurrentView}
         hasUnreadMessages={unreadNtim}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        userName={userName}
+        onLogout={() => setShowAuth(true)}
       />
-      
+
       <main className="flex-1 h-screen overflow-auto relative custom-scrollbar w-full">
         <ThemeToggle theme={theme} setTheme={setTheme} />
-        
+
         {/* Mobile Header - High Z-index ensures menu access even over detail panels */}
         <div className="md:hidden p-4 flex items-center gap-3 sticky top-0 z-40 bg-brand-rose/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-brand-mint/50 dark:border-slate-800">
-           <button 
-             onClick={() => setIsSidebarOpen(true)}
-             className="p-2 bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-800 rounded-lg text-brand-deep dark:text-white shadow-sm active:bg-brand-mint/50"
-           >
-             <Menu size={20} />
-           </button>
-           <span className="font-bold text-brand-deep dark:text-white">TS JobFlow</span>
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-800 rounded-lg text-brand-deep dark:text-white shadow-sm active:bg-brand-mint/50"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-bold text-brand-deep dark:text-white">TS JobFlow</span>
         </div>
 
         {renderContent()}
