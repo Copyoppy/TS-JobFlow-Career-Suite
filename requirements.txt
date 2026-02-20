@@ -1,0 +1,8 @@
+# This project is a TypeScript/React application managed via package.json.
+# If you are developing a Python backend or using Python scripts alongside this project,
+# the following packages are recommended based on the usage of Google Gemini API:
+
+google-generativeai==0.8.3
+python-dotenv==1.0.1
+pillow==11.0.0  # For image processing if needed
+requests==2.32.3
