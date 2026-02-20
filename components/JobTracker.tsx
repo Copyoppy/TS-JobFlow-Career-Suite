@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Job, JobStatus, Resume, TailoredResume, OfferComparisonResult, AppSettings } from '../types';
 import {
@@ -19,6 +18,9 @@ import {
   ShieldAlert, XCircle, Send, Mic, MicOff, PlayCircle, BarChart3, Users, DollarSignIcon, Copy, Check, ArrowRight,
   RefreshCw, Trophy, Scale, ExternalLink, GraduationCap, Bell, CalendarClock, CalendarPlus, BellRing, AlertCircle, Clock
 } from 'lucide-react';
+import { ATSGauge, parseBold, FormattedDisplay } from './JobTrackerHelpers';
+import AddJobModal from './AddJobModal';
+import CompareOffersModal from './CompareOffersModal';
 
 interface JobTrackerProps {
   jobs: Job[];
@@ -30,115 +32,6 @@ interface JobTrackerProps {
   settings: AppSettings;
 }
 
-// --- Helper Components ---
-
-const ATSGauge = ({ score }: { score: number }) => {
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-
-  const getColor = (score: number) => {
-    if (score >= 80) return '#10b981'; // Emerald 500
-    if (score >= 65) return '#3b82f6'; // Blue 500
-    if (score >= 40) return '#f59e0b'; // Amber 500
-    return '#ef4444'; // Red 500
-  };
-
-  const getLabel = (score: number) => {
-    if (score >= 80) return 'Excellent Match';
-    if (score >= 65) return 'Strong Match';
-    if (score >= 40) return 'Fair Match';
-    return 'Weak Match';
-  };
-
-  return (
-    <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700">
-      <div className="relative w-32 h-32 flex items-center justify-center">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle
-            cx="64"
-            cy="64"
-            r={radius}
-            stroke="currentColor"
-            strokeWidth="8"
-            fill="none"
-            className="text-slate-100 dark:text-slate-800"
-          />
-          <circle
-            cx="64"
-            cy="64"
-            r={radius}
-            stroke={getColor(score)}
-            strokeWidth="8"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            fill="none"
-            className="transition-all duration-1000 ease-out"
-          />
-        </svg>
-        <div className="absolute flex flex-col items-center justify-center">
-          <span className="text-3xl font-black text-slate-800 dark:text-white">{score}%</span>
-        </div>
-      </div>
-      <span className="mt-3 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-current" style={{ color: getColor(score), backgroundColor: `${getColor(score)}10` }}>
-        {getLabel(score)}
-      </span>
-    </div>
-  );
-};
-
-// Parse bold text helper
-const parseBold = (text: string) => {
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-bold text-slate-900 dark:text-slate-100">{part.slice(2, -2)}</strong>;
-    }
-    return part;
-  });
-};
-
-const FormattedDisplay = ({ text }: { text: string | undefined }) => {
-  if (!text) return <div className="h-full flex items-center justify-center text-slate-400 italic text-sm">No content generated yet. Click generate to start.</div>;
-
-  const lines = text.split('\n');
-  return (
-    <div className="space-y-1">
-      {lines.map((line, i) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={i} className="h-3" />;
-
-        if ((trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 80) || trimmed.startsWith('##')) {
-          const content = trimmed.replace(/\*\*/g, '').replace(/^#+\s/, '');
-          return <h3 key={i} className="text-brand-deep dark:text-blue-300 font-bold text-sm mt-4 mb-2">{content}</h3>;
-        }
-
-        if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-          return (
-            <div key={i} className="flex items-start gap-2 pl-2 mb-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-brand-primary mt-2 flex-shrink-0" />
-              <span className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{parseBold(trimmed.replace(/^[\*\-\•]\s/, ''))}</span>
-            </div>
-          );
-        }
-
-        if (/^\d+\./.test(trimmed)) {
-          const number = trimmed.match(/^\d+\./)?.[0];
-          const content = trimmed.replace(/^\d+\.\s/, '');
-          return (
-            <div key={i} className="flex items-start gap-2 pl-2 mb-2">
-              <span className="font-bold text-brand-primary text-sm min-w-[20px] mt-0.5">{number}</span>
-              <span className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{parseBold(content)}</span>
-            </div>
-          );
-        }
-
-        return <p key={i} className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-1">{parseBold(line)}</p>;
-      })}
-    </div>
-  );
-};
 
 const KANBAN_COLUMNS = [
   { id: JobStatus.APPLIED, label: 'Applied', color: 'bg-blue-50 border-blue-100 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200' },
@@ -170,6 +63,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
   const [viewType, setViewType] = useState<'list' | 'board'>('list');
   const [draggedJobId, setDraggedJobId] = useState<string | null>(null);
   const [activeMenuJobId, setActiveMenuJobId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const isOffersMode = viewMode === 'offers';
 
@@ -191,7 +85,11 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
 
   const displayedJobs = jobs.filter(job => {
     const origin = job.origin || (job.status === JobStatus.OFFER ? 'offer' : 'application');
-    return isOffersMode ? origin === 'offer' : origin === 'application';
+    const matchesMode = isOffersMode ? origin === 'offer' : origin === 'application';
+    if (!matchesMode) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return job.company.toLowerCase().includes(q) || job.role.toLowerCase().includes(q) || (job.location && job.location.toLowerCase().includes(q));
   });
 
   const [newJob, setNewJob] = useState<Partial<Job>>({
@@ -528,7 +426,21 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
           <div className="sticky top-0 z-10 p-8 pb-4 pt-4 bg-brand-rose dark:bg-slate-950">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary" size={20} />
-              <input type="text" placeholder="Search by company or role..." className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-slate-700 dark:text-slate-200 placeholder-brand-primary/30" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by company, role, or location..."
+                className="w-full pl-10 pr-10 py-3 bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-slate-700 dark:text-slate-200 placeholder-brand-primary/30"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
           <div className="px-8 pb-8">
@@ -1168,119 +1080,29 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
 
       {/* Feature 5 Modal: Offer Comparison */}
       {showCompareModal && (
-        <div className="fixed inset-0 bg-brand-deep/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-brand-mint dark:border-slate-800 flex flex-col">
-            <div className="p-6 border-b border-brand-mint dark:border-slate-800 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><Scale size={20} className="text-brand-primary" /> Offer Comparison Matrix</h2>
-              <button onClick={() => { setShowCompareModal(false); setComparisonResult(null); }} className="text-slate-400 hover:text-brand-primary transition"><X size={24} /></button>
-            </div>
-
-            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-              {/* Selection Controls */}
-              {!comparisonResult ? (
-                <div className="flex flex-col items-center justify-center h-full py-10 space-y-6">
-                  <p className="text-slate-600 dark:text-slate-400">Select two offers to analyze side-by-side.</p>
-                  <div className="flex items-center gap-4 w-full max-w-2xl">
-                    <select
-                      value={compareSelection[0]}
-                      onChange={(e) => setCompareSelection([e.target.value, compareSelection[1]])}
-                      className="flex-1 p-3 border border-brand-mint dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl outline-none"
-                    >
-                      <option value="">Select Offer A</option>
-                      {displayedJobs.map(j => <option key={j.id} value={j.id}>{j.company} - {j.role}</option>)}
-                    </select>
-                    <span className="font-bold text-slate-400">VS</span>
-                    <select
-                      value={compareSelection[1]}
-                      onChange={(e) => setCompareSelection([compareSelection[0], e.target.value])}
-                      className="flex-1 p-3 border border-brand-mint dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl outline-none"
-                    >
-                      <option value="">Select Offer B</option>
-                      {displayedJobs.map(j => <option key={j.id} value={j.id}>{j.company} - {j.role}</option>)}
-                    </select>
-                  </div>
-                  <button
-                    onClick={handleCompareOffers}
-                    disabled={!compareSelection[0] || !compareSelection[1] || loadingFeature === 'compare'}
-                    className="bg-brand-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-deep disabled:opacity-50 transition shadow-lg shadow-brand-primary/20 flex items-center gap-2"
-                  >
-                    {loadingFeature === 'compare' ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                    Run Comparison
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Header Row */}
-                  <div className="grid grid-cols-3 gap-4 border-b-2 border-slate-100 dark:border-slate-800 pb-4">
-                    <div className="font-bold text-slate-400 text-sm uppercase tracking-wider self-end">Criteria</div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-brand-deep dark:text-white">{jobs.find(j => j.id === compareSelection[0])?.company}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{jobs.find(j => j.id === compareSelection[0])?.role}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-brand-deep dark:text-white">{jobs.find(j => j.id === compareSelection[1])?.company}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{jobs.find(j => j.id === compareSelection[1])?.role}</div>
-                    </div>
-                  </div>
-
-                  {/* Points */}
-                  <div className="space-y-2">
-                    {comparisonResult.points.map((point, idx) => (
-                      <div key={idx} className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-brand-mint dark:hover:border-slate-600 transition-colors">
-                        <div className="font-medium text-slate-700 dark:text-slate-300 flex items-center">{point.criteria}</div>
-                        <div className={`text-sm p-3 rounded-lg border ${point.winner === 'job1' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
-                          {point.job1Value}
-                          {point.winner === 'job1' && <CheckCircle2 size={14} className="inline ml-2 text-emerald-500" />}
-                        </div>
-                        <div className={`text-sm p-3 rounded-lg border ${point.winner === 'job2' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
-                          {point.job2Value}
-                          {point.winner === 'job2' && <CheckCircle2 size={14} className="inline ml-2 text-emerald-500" />}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Verdict */}
-                  <div className="bg-brand-deep dark:bg-blue-900 text-white p-6 rounded-xl shadow-lg mt-6">
-                    <h3 className="font-bold text-brand-mint mb-2 flex items-center gap-2"><Sparkles size={18} /> AI Verdict</h3>
-                    <p className="leading-relaxed opacity-90">{comparisonResult.verdict}</p>
-                  </div>
-
-                  <button
-                    onClick={() => setComparisonResult(null)}
-                    className="text-sm text-slate-500 hover:text-brand-primary underline block mx-auto mt-4"
-                  >
-                    Start New Comparison
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <CompareOffersModal
+          jobs={jobs}
+          displayedJobs={displayedJobs}
+          compareSelection={compareSelection}
+          setCompareSelection={setCompareSelection}
+          comparisonResult={comparisonResult}
+          setComparisonResult={setComparisonResult}
+          loadingFeature={loadingFeature}
+          onCompare={handleCompareOffers}
+          onClose={() => setShowCompareModal(false)}
+        />
       )}
 
       {/* Add Job Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-brand-deep/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-brand-mint dark:border-slate-700">
-            <div className="p-6 border-b border-brand-mint dark:border-slate-700 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white">{isOffersMode ? 'Log New Offer' : 'Add New Application'}</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-brand-primary transition"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleCreateJob} className="p-6 space-y-4">
-              <input required type="text" placeholder="Company" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
-              <input required type="text" placeholder="Role Title" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.role} onChange={e => setNewJob({ ...newJob, role: e.target.value })} />
-              <div className="grid grid-cols-2 gap-4">
-                <input type="text" placeholder="Location" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
-                <input type="text" placeholder="Salary" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.salary} onChange={e => setNewJob({ ...newJob, salary: e.target.value })} />
-              </div>
-              <textarea className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm h-24 resize-none outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" placeholder="Job Description..." value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} />
-              <button type="submit" disabled={isGenerating} className="w-full bg-brand-primary text-white py-3 rounded-xl font-medium hover:bg-brand-deep transition flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20">
-                {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} className="text-white" />} {isGenerating ? 'Generating...' : 'Create Job'}
-              </button>
-            </form>
-          </div>
-        </div>
+        <AddJobModal
+          isOffersMode={isOffersMode}
+          newJob={newJob}
+          setNewJob={setNewJob}
+          isGenerating={isGenerating}
+          onSubmit={handleCreateJob}
+          onClose={() => setShowAddModal(false)}
+        />
       )}
     </div>
   );

@@ -10,7 +10,7 @@ import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
 import AuthScreen from './components/AuthScreen';
 import { ToastProvider } from './components/Toast';
-import { NotificationProvider } from './components/NotificationContext';
+import { NotificationProvider, useNotifications } from './components/NotificationContext';
 import NotificationBell from './components/NotificationBell';
 import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings } from './types';
 import { Menu, Sun, Moon, Monitor } from 'lucide-react';
@@ -418,10 +418,22 @@ const ThemeToggle = ({ theme, setTheme, onNavigate }: { theme: Theme, setTheme: 
   );
 };
 
+// Bridge component to expose useNotifications() to the App parent via a ref callback
+const StatusNotifier: React.FC<{ onReady: (fn: (type: string, title: string, message: string, jobId?: string) => void) => void }> = ({ onReady }) => {
+  const { addNotification } = useNotifications();
+  React.useEffect(() => {
+    onReady((type: string, title: string, message: string, jobId?: string) => {
+      addNotification(type as any, title, message, jobId, ViewState.JOBS);
+    });
+  }, [addNotification, onReady]);
+  return null;
+};
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
+  const notifyRef = React.useRef<((type: string, title: string, message: string, jobId?: string) => void) | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     return localStorage.getItem('jobflow_onboarding_seen') !== 'true';
   });
@@ -530,7 +542,18 @@ const App: React.FC = () => {
   };
 
   const handleJobStatusChange = (job: Job, newStatus: JobStatus) => {
-    // Only trigger notification if status is Accepted or Rejected
+    // Push to Notification Center
+    if (newStatus === JobStatus.ACCEPTED) {
+      notifyRef.current?.('status_change', `Offer Accepted! 🎉`, `You accepted the ${job.role} position at ${job.company}.`, job.id);
+    } else if (newStatus === JobStatus.REJECTED) {
+      notifyRef.current?.('status_change', `Application Update`, `${job.role} at ${job.company} was marked as rejected.`, job.id);
+    } else if (newStatus === JobStatus.INTERVIEW) {
+      notifyRef.current?.('status_change', `Interview Scheduled`, `${job.role} at ${job.company} moved to interview stage.`, job.id);
+    } else if (newStatus === JobStatus.OFFER) {
+      notifyRef.current?.('status_change', `New Offer! 🎉`, `You received an offer for ${job.role} at ${job.company}!`, job.id);
+    }
+
+    // Also send Ntim chat messages for Accepted/Rejected
     if (newStatus === JobStatus.ACCEPTED || newStatus === JobStatus.REJECTED) {
       let messageText = '';
 
@@ -549,7 +572,6 @@ const App: React.FC = () => {
 
         setNtimMessages(prev => [...prev, newMessage]);
 
-        // Mark as unread if not currently in chat view
         if (currentView !== ViewState.NTIM) {
           setUnreadNtim(true);
         }
@@ -611,6 +633,7 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <NotificationProvider jobs={jobs} settings={settings}>
+        <StatusNotifier onReady={(fn) => { notifyRef.current = fn; }} />
         <div className="flex h-screen bg-brand-rose dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-200">
           <Sidebar
             currentView={currentView}
