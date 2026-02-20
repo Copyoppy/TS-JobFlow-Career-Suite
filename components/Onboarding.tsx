@@ -82,8 +82,8 @@ const slides = [
     title: "Ace every single interview.",
     description: "Practice with our audio-native AI coach and get real-time feedback on your answers.",
     icon: Mic,
-    color1: "bg-brand-deep",
-    color2: "bg-indigo-900",
+    color1: "bg-slate-700",
+    color2: "bg-slate-500",
     illustration: (
       <div className="relative w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center">
         <div className="absolute inset-0 bg-slate-200 rounded-full scale-110 opacity-20 animate-pulse" />
@@ -135,17 +135,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
         {/* Slanted Visual Elements */}
         <div className="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className={`absolute top-1/4 -right-1/4 w-[150%] h-32 ${slide.color1} opacity-100 transform -rotate-[12deg] skew-x-[-10deg] transition-all duration-700 ease-in-out`} />
-          <div className={`absolute top-1/2 -left-1/4 w-[150%] h-40 ${slide.color2} opacity-40 transform -rotate-[12deg] skew-x-[-10deg] transition-all duration-700 ease-in-out delay-100`} />
+          <div className={`absolute top-[20%] -right-1/4 w-[150%] h-28 sm:h-32 ${slide.color1} opacity-90 transform -rotate-[12deg] skew-x-[-10deg] transition-all duration-700 ease-in-out`} />
+          <div className={`absolute top-[38%] -left-1/4 w-[150%] h-32 sm:h-40 ${slide.color2} opacity-30 transform -rotate-[12deg] skew-x-[-10deg] transition-all duration-700 ease-in-out delay-100`} />
         </div>
 
         {/* Illustration Area */}
-        <div className="flex-1 min-h-0 flex items-center justify-center relative z-10">
+        <div className="flex-1 min-h-0 flex items-center justify-center relative z-10 overflow-hidden">
           {slide.illustration}
         </div>
 
         {/* Text Content */}
-        <div className="p-5 sm:p-10 pt-0 relative z-10 flex flex-col shrink-0">
+        <div className="p-5 sm:p-10 pt-2 sm:pt-4 relative z-10 flex flex-col shrink-0 bg-white rounded-t-3xl">
           <span className="text-slate-400 font-medium text-sm sm:text-lg mb-2 sm:mb-4">{slide.tag}</span>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-2 sm:mb-4 tracking-tight">
             {slide.title}
