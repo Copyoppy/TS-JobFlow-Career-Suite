@@ -33,6 +33,8 @@ interface JobTrackerProps {
   resume: Resume;
   setResume: React.Dispatch<React.SetStateAction<Resume>>;
   settings: AppSettings;
+  statusFilter?: JobStatus | null;
+  onClearStatusFilter?: () => void;
 }
 
 
@@ -44,7 +46,7 @@ const KANBAN_COLUMNS = [
   { id: JobStatus.REJECTED, label: 'Rejected', color: 'bg-rose-50 border-rose-100 text-rose-800 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-200' },
 ];
 
-const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings }) => {
+const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings, statusFilter, onClearStatusFilter }) => {
   const { showToast } = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -92,6 +94,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
     const origin = job.origin || (job.status === JobStatus.OFFER ? 'offer' : 'application');
     const matchesMode = isOffersMode ? origin === 'offer' : origin === 'application';
     if (!matchesMode) return false;
+    if (statusFilter && job.status !== statusFilter) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return job.company.toLowerCase().includes(q) || job.role.toLowerCase().includes(q) || (job.location && job.location.toLowerCase().includes(q));
@@ -414,7 +417,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
   return (
     <div className="h-full flex flex-col relative pt-16 md:pt-8">
       {/* Header */}
-      <div className="p-8 pb-4 flex justify-between items-center border-b border-brand-mint dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-10">
+      <div className="p-8 pb-4 flex justify-between items-center border-b border-brand-mint dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-20">
         <div>
           <h1 className="text-2xl font-bold text-brand-deep dark:text-white">{isOffersMode ? 'Offers Received' : 'My Applications'}</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{displayedJobs.length} {isOffersMode ? 'Active Offers' : 'Active applications'}</p>
@@ -442,7 +445,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       <div className="flex-1 overflow-hidden flex relative">
         {/* Main Content (List/Board) */}
         <div className={`flex-1 overflow-y-auto transition-all custom-scrollbar ${selectedJob ? (viewType === 'list' ? 'w-1/2 hidden md:block' : 'w-full md:w-1/2 hidden md:block') : 'w-full'}`}>
-          <div className="sticky top-0 z-10 p-8 pb-4 pt-4 bg-brand-rose dark:bg-slate-950">
+          <div className="sticky top-0 z-20 p-8 pb-4 pt-4 bg-brand-rose dark:bg-slate-950">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary" size={20} />
               <input
@@ -461,6 +464,20 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
                 </button>
               )}
             </div>
+
+            {/* Status Filter Pill */}
+            {statusFilter && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Filtered by:</span>
+                <button
+                  onClick={onClearStatusFilter}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-primary/10 dark:bg-brand-primary/20 text-brand-primary text-xs font-semibold rounded-full hover:bg-brand-primary/20 dark:hover:bg-brand-primary/30 transition-colors"
+                >
+                  {statusFilter}
+                  <X size={12} />
+                </button>
+              </div>
+            )}
           </div>
           <div className="px-8 pb-8">
             {displayedJobs.length === 0 ? (

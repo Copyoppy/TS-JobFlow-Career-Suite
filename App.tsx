@@ -431,6 +431,7 @@ const StatusNotifier: React.FC<{ onReady: (fn: (type: string, title: string, mes
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
+  const [statusFilter, setStatusFilter] = useState<JobStatus | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
   const notifyRef = React.useRef<((type: string, title: string, message: string, jobId?: string) => void) | null>(null);
@@ -616,14 +617,20 @@ const App: React.FC = () => {
     setShowAuth(false);
   };
 
+  // Dashboard card click: navigate to Jobs with a pre-set status filter
+  const handleDashboardCardClick = (status: JobStatus) => {
+    setStatusFilter(status);
+    setCurrentView(ViewState.JOBS);
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
-        return <Dashboard jobs={jobs} onViewChange={setCurrentView} userName={userName} />;
+        return <Dashboard jobs={jobs} onViewChange={setCurrentView} userName={userName} onCardClick={handleDashboardCardClick} />;
       case ViewState.JOBS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} />;
+        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} />;
       case ViewState.OFFERS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} />;
+        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} />;
       case ViewState.RESUME:
         return <ResumeBuilder resume={resume} setResume={setResume} />;
       case ViewState.AVATAR:
@@ -633,7 +640,7 @@ const App: React.FC = () => {
       case ViewState.SETTINGS:
         return <Settings jobs={jobs} resume={resume} onImport={handleImportData} onReset={handleResetData} settings={settings} onUpdateSettings={setSettings} />;
       default:
-        return <Dashboard jobs={jobs} onViewChange={setCurrentView} />;
+        return <Dashboard jobs={jobs} onViewChange={setCurrentView} onCardClick={handleDashboardCardClick} />;
     }
   };
 

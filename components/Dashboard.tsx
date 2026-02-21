@@ -11,10 +11,14 @@ interface DashboardProps {
   jobs: Job[];
   onViewChange: (view: ViewState) => void;
   userName?: string;
+  onCardClick?: (status: JobStatus) => void;
 }
 
-const StatCard = ({ title, value, icon: Icon, color, bg, darkBg }: any) => (
-  <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-brand-mint dark:border-slate-800 shadow-sm shadow-brand-primary/5 flex items-start justify-between group hover:border-brand-secondary transition-all">
+const StatCard = ({ title, value, icon: Icon, color, bg, darkBg, onClick }: any) => (
+  <div
+    onClick={onClick}
+    className={`bg-white dark:bg-slate-900 p-6 rounded-2xl border border-brand-mint dark:border-slate-800 shadow-sm shadow-brand-primary/5 flex items-start justify-between group hover:border-brand-secondary transition-all ${onClick ? 'cursor-pointer hover:scale-[1.03] hover:shadow-md active:scale-[0.98]' : ''}`}
+  >
     <div>
       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{title}</p>
       <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</h3>
@@ -52,7 +56,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName }) => {
+const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName, onCardClick }) => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
   const [visibleSeries, setVisibleSeries] = useState({ apps: true, offers: true });
 
@@ -233,10 +237,10 @@ const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName }) =
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Applied" value={totalApplied} icon={TrendingUp} color="text-brand-primary" bg="bg-brand-mint/50" darkBg="dark:bg-blue-900/30" />
-        <StatCard title="Interviewing" value={interviewing} icon={Clock} color="text-amber-500" bg="bg-amber-50" darkBg="dark:bg-amber-900/30" />
-        <StatCard title="Offers Received" value={offers} icon={CheckCircle} color="text-blue-500" bg="bg-blue-50" darkBg="dark:bg-indigo-900/30" />
-        <StatCard title="Rejected" value={rejected} icon={XCircle} color="text-rose-500" bg="bg-rose-50" darkBg="dark:bg-rose-900/30" />
+        <StatCard title="Total Applied" value={totalApplied} icon={TrendingUp} color="text-brand-primary" bg="bg-brand-mint/50" darkBg="dark:bg-blue-900/30" onClick={() => onCardClick?.(JobStatus.APPLIED)} />
+        <StatCard title="Interviewing" value={interviewing} icon={Clock} color="text-amber-500" bg="bg-amber-50" darkBg="dark:bg-amber-900/30" onClick={() => onCardClick?.(JobStatus.INTERVIEW)} />
+        <StatCard title="Offers Received" value={offers} icon={CheckCircle} color="text-blue-500" bg="bg-blue-50" darkBg="dark:bg-indigo-900/30" onClick={() => onCardClick?.(JobStatus.OFFER)} />
+        <StatCard title="Rejected" value={rejected} icon={XCircle} color="text-rose-500" bg="bg-rose-50" darkBg="dark:bg-rose-900/30" onClick={() => onCardClick?.(JobStatus.REJECTED)} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
