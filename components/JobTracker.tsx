@@ -35,6 +35,8 @@ interface JobTrackerProps {
   settings: AppSettings;
   statusFilter?: JobStatus | null;
   onClearStatusFilter?: () => void;
+  initialJobId?: string | null;
+  onJobSelected?: (jobId: string | null) => void;
 }
 
 
@@ -46,7 +48,7 @@ const KANBAN_COLUMNS = [
   { id: JobStatus.REJECTED, label: 'Rejected', color: 'bg-rose-50 border-rose-100 text-rose-800 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-200' },
 ];
 
-const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings, statusFilter, onClearStatusFilter }) => {
+const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings, statusFilter, onClearStatusFilter, initialJobId, onJobSelected }) => {
   const { showToast } = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -89,6 +91,18 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       }
     }
   }, []);
+
+  // Handle Initial Selection
+  useEffect(() => {
+    if (initialJobId) {
+      const job = jobs.find(j => j.id === initialJobId);
+      if (job) {
+        setSelectedJob(job);
+        // Reset the initial job ID in parent to avoid re-triggering if we close and re-open
+        if (onJobSelected) onJobSelected(null);
+      }
+    }
+  }, [initialJobId, jobs, onJobSelected]);
 
   const displayedJobs = jobs.filter(job => {
     const origin = job.origin || (job.status === JobStatus.OFFER ? 'offer' : 'application');

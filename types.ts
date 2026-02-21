@@ -93,7 +93,7 @@ export interface Job {
 
   // New AI Feature Fields
   atsAnalysis?: AnalysisResult;
-  learningRoadmap?: LearningDay[]; // New field for Roadmap
+  learningRoadmap?: LearningDay[];
   redFlags?: RedFlagAnalysis;
   networking?: NetworkingDrafts;
   negotiation?: NegotiationAdvice;
@@ -106,6 +106,18 @@ export interface Job {
   // User-added metadata
   applicationUrl?: string;
   notes?: string;
+  recruiterId?: string; // Link to Recruiter CRM
+}
+
+export interface Recruiter {
+  id: string;
+  name: string;
+  agency?: string;
+  email?: string;
+  linkedin?: string;
+  phone?: string;
+  notes?: string;
+  lastContactDate?: string;
 }
 
 export interface ResumeSection {
@@ -125,6 +137,9 @@ export interface Project {
 }
 
 export interface Resume {
+  id: string;
+  name: string; // "Product Manager Resume", "Frontend Resume", etc.
+  isDefault: boolean;
   fullName: string;
   email: string;
   phone: string;
@@ -135,6 +150,7 @@ export interface Resume {
   projects: Project[];
   certifications: ResumeSection[];
   avatar?: string;
+  updatedAt: number;
 }
 
 export interface Message {
@@ -163,5 +179,8 @@ export enum ViewState {
   RESUME = 'RESUME',
   AVATAR = 'AVATAR',
   NTIM = 'NTIM',
+  CRM = 'CRM',
+  CALENDAR = 'CALENDAR',
+  INSIGHTS = 'INSIGHTS',
   SETTINGS = 'SETTINGS'
 }

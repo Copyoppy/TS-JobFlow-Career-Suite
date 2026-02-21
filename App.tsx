@@ -9,10 +9,11 @@ import NtimChat from './components/ClaireChat';
 import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
 import AuthScreen from './components/AuthScreen';
+import CalendarView from './components/CalendarView';
 import { ToastProvider } from './components/Toast';
 import { NotificationProvider, useNotifications } from './components/NotificationContext';
 import NotificationBell from './components/NotificationBell';
-import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings } from './types';
+import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings, Recruiter, OfferComparisonResult } from './types';
 import { Menu, Sun, Moon, Monitor } from 'lucide-react';
 
 // --- MOCK DATA START ---
@@ -233,6 +234,10 @@ const MOCK_JOBS: Job[] = [
 ];
 
 const MOCK_RESUME: Resume = {
+  id: 'default',
+  name: 'Main Resume',
+  isDefault: true,
+  updatedAt: Date.now(),
   fullName: 'Kingsford Johnson',
   email: 'kingsford.johnson@example.dev',
   phone: '+1 (415) 555-0199',
@@ -431,6 +436,7 @@ const StatusNotifier: React.FC<{ onReady: (fn: (type: string, title: string, mes
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobStatus | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
@@ -500,57 +506,74 @@ const App: React.FC = () => {
     return MOCK_MESSAGES;
   });
 
-  const [unreadNtim, setUnreadNtim] = useState(false);
-
-  // Resume State, fallback to MOCK_RESUME
-  const [resume, setResume] = useState<Resume>(() => {
+  // Recruiters State
+  const [recruiters, setRecruiters] = useState<Recruiter[]>(() => {
     try {
-      const savedResume = localStorage.getItem('jobflow_resume');
-      if (savedResume) {
-        // Migration check: if old resume doesn't have certifications, add empty array
-        const parsed = JSON.parse(savedResume);
-        if (!parsed.certifications) parsed.certifications = [];
-        return parsed;
-      }
-    } catch (e) {
-      console.error("Failed to parse resume from local storage", e);
-    }
-    // Return Mock Data if no local storage
-    return MOCK_RESUME;
+      const saved = localStorage.getItem('jobflow_recruiters');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
-  // Save to localStorage whenever jobs change
-  useEffect(() => {
+  // Resumes State (Migration from single to multi)
+  const [resumes, setResumes] = useState<Resume[]>(() => {
     try {
-      localStorage.setItem('jobflow_jobs', JSON.stringify(jobs));
-    } catch (e) {
-      console.error("Failed to save jobs to local storage", e);
-    }
+      const savedMulti = localStorage.getItem('jobflow_resumes');
+      if (savedMulti) return JSON.parse(savedMulti);
+
+      const savedSingle = localStorage.getItem('jobflow_resume');
+      if (savedSingle) {
+        const parsed = JSON.parse(savedSingle);
+        const migrated: Resume = {
+          ...parsed,
+          id: 'default',
+          name: 'Default Resume',
+          isDefault: true,
+          updatedAt: Date.now(),
+          certifications: parsed.certifications || []
+        };
+        return [migrated];
+      }
+    } catch (e) { console.error("Resume migration failed", e); }
+    return [{ ...MOCK_RESUME, id: 'default', name: 'Default Resume', isDefault: true, updatedAt: Date.now() }];
+  });
+
+  const [activeResumeId, setActiveResumeId] = useState<string>(() => {
+    const defaultRes = resumes.find(r => r.isDefault) || resumes[0];
+    return defaultRes.id;
+  });
+
+  const resume = resumes.find(r => r.id === activeResumeId) || resumes[0];
+
+  const setResume = (updater: React.SetStateAction<Resume>) => {
+    setResumes(prev => prev.map(r => {
+      if (r.id === activeResumeId) {
+        return typeof updater === 'function' ? (updater as any)(r) : updater;
+      }
+      return r;
+    }));
+  };
+
+  const [unreadNtim, setUnreadNtim] = useState(false);
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('jobflow_jobs', JSON.stringify(jobs));
   }, [jobs]);
 
-  // Save to localStorage whenever resume changes
   useEffect(() => {
-    try {
-      localStorage.setItem('jobflow_resume', JSON.stringify(resume));
-    } catch (e) {
-      console.error("Failed to save resume to local storage", e);
-    }
-  }, [resume]);
+    localStorage.setItem('jobflow_resumes', JSON.stringify(resumes));
+  }, [resumes]);
 
-  // Save chat messages to localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem('jobflow_ntim_messages', JSON.stringify(ntimMessages));
-    } catch (e) {
-      console.error("Failed to save chat messages to local storage", e);
-    }
+    localStorage.setItem('jobflow_recruiters', JSON.stringify(recruiters));
+  }, [recruiters]);
+
+  useEffect(() => {
+    localStorage.setItem('jobflow_ntim_messages', JSON.stringify(ntimMessages));
   }, [ntimMessages]);
 
-  // Clear unread badge when viewing Ntim
   useEffect(() => {
-    if (currentView === ViewState.NTIM) {
-      setUnreadNtim(false);
-    }
+    if (currentView === ViewState.NTIM) setUnreadNtim(false);
   }, [currentView]);
 
   const handleAttachAvatar = (avatarUrl: string) => {
@@ -558,7 +581,6 @@ const App: React.FC = () => {
   };
 
   const handleJobStatusChange = (job: Job, newStatus: JobStatus) => {
-    // Push to Notification Center
     if (newStatus === JobStatus.ACCEPTED) {
       notifyRef.current?.('status_change', `Offer Accepted! 🎉`, `You accepted the ${job.role} position at ${job.company}.`, job.id);
     } else if (newStatus === JobStatus.REJECTED) {
@@ -569,28 +591,17 @@ const App: React.FC = () => {
       notifyRef.current?.('status_change', `New Offer! 🎉`, `You received an offer for ${job.role} at ${job.company}!`, job.id);
     }
 
-    // Also send Ntim chat messages for Accepted/Rejected
     if (newStatus === JobStatus.ACCEPTED || newStatus === JobStatus.REJECTED) {
       let messageText = '';
-
       if (newStatus === JobStatus.ACCEPTED) {
         messageText = `🎉 Congratulations! I noticed you accepted an offer for the **${job.role}** position at **${job.company}**! That is absolutely fantastic news! Do you need any tips on salary negotiation or preparing for your first day?`;
       } else if (newStatus === JobStatus.REJECTED) {
         messageText = `I saw the update about the **${job.role}** role at **${job.company}**. I know that can be disappointing, but don't let it discourage you. Rejection is often just redirection. 🦁 Would you like to analyze the job description together to see if there are any skills we can highlight better for next time?`;
       }
-
       if (messageText) {
-        const newMessage: Message = {
-          id: Date.now().toString(),
-          role: 'model',
-          text: messageText
-        };
-
+        const newMessage: Message = { id: Date.now().toString(), role: 'model', text: messageText };
         setNtimMessages(prev => [...prev, newMessage]);
-
-        if (currentView !== ViewState.NTIM) {
-          setUnreadNtim(true);
-        }
+        if (currentView !== ViewState.NTIM) setUnreadNtim(true);
       }
     }
   };
@@ -601,10 +612,15 @@ const App: React.FC = () => {
   };
 
   const handleResetData = () => {
-    setJobs(MOCK_JOBS);
-    setResume(MOCK_RESUME);
-    localStorage.removeItem('jobflow_jobs');
-    localStorage.removeItem('jobflow_resume');
+    if (window.confirm("Are you sure you want to reset all data?")) {
+      setJobs(MOCK_JOBS);
+      setResumes([{ ...MOCK_RESUME, id: 'default', name: 'Default Resume', isDefault: true, updatedAt: Date.now() }]);
+      setRecruiters([]);
+      localStorage.removeItem('jobflow_jobs');
+      localStorage.removeItem('jobflow_resumes');
+      localStorage.removeItem('jobflow_recruiters');
+      localStorage.removeItem('jobflow_resume');
+    }
   };
 
   const handleCompleteOnboarding = () => {
@@ -623,14 +639,20 @@ const App: React.FC = () => {
     setCurrentView(ViewState.JOBS);
   };
 
+  const handleNavigateToJob = (job: Job) => {
+    setActiveJobId(job.id);
+    const origin = job.origin || (job.status === JobStatus.OFFER ? 'offer' : 'application');
+    setCurrentView(origin === 'offer' ? ViewState.OFFERS : ViewState.JOBS);
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
         return <Dashboard jobs={jobs} onViewChange={setCurrentView} userName={userName} onCardClick={handleDashboardCardClick} />;
       case ViewState.JOBS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} />;
+        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} />;
       case ViewState.OFFERS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} />;
+        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} />;
       case ViewState.RESUME:
         return <ResumeBuilder resume={resume} setResume={setResume} />;
       case ViewState.AVATAR:
@@ -639,6 +661,12 @@ const App: React.FC = () => {
         return <NtimChat messages={ntimMessages} setMessages={setNtimMessages} jobs={jobs} onEditJob={(jobId, updates) => setJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...updates } : j))} />;
       case ViewState.SETTINGS:
         return <Settings jobs={jobs} resume={resume} onImport={handleImportData} onReset={handleResetData} settings={settings} onUpdateSettings={setSettings} />;
+      case ViewState.CRM:
+        return <div className="p-8"><h1 className="text-2xl font-bold text-brand-deep dark:text-white">Recruiter CRM (Coming Soon)</h1></div>;
+      case ViewState.CALENDAR:
+        return <CalendarView jobs={jobs} onNavigateToJob={handleNavigateToJob} />;
+      case ViewState.INSIGHTS:
+        return <div className="p-8"><h1 className="text-2xl font-bold text-brand-deep dark:text-white">Search Insights (Coming Soon)</h1></div>;
       default:
         return <Dashboard jobs={jobs} onViewChange={setCurrentView} onCardClick={handleDashboardCardClick} />;
     }

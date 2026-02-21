@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Briefcase, FileText, UserCircle2, Settings, LogOut, CheckCircle, X } from 'lucide-react';
+import { LayoutDashboard, Briefcase, FileText, UserCircle2, Settings, LogOut, CheckCircle, X, Calendar as CalendarIcon, BarChart3, Users } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
@@ -72,7 +72,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.JOBS, label: 'My Applications', icon: Briefcase },
     { id: ViewState.OFFERS, label: 'Offers Received', icon: CheckCircle },
+    { id: ViewState.CALENDAR, label: 'Interview Calendar', icon: CalendarIcon },
+    { id: ViewState.INSIGHTS, label: 'Search Insights', icon: BarChart3 },
     { id: ViewState.RESUME, label: 'Resume Builder', icon: FileText },
+    { id: ViewState.CRM, label: 'Recruiter CRM', icon: Users },
     { id: ViewState.AVATAR, label: 'AI Avatar', icon: UserCircle2 },
   ];
 
