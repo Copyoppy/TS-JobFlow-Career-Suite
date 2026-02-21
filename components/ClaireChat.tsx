@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Send, User, Loader2, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Send, User, Loader2, Sparkles, Mic, MicOff } from 'lucide-react';
 import { createChatSession } from '../services/geminiService';
 import { GenerateContentResponse, Content } from "@google/genai";
 import { Message, Job } from '../types';
@@ -136,6 +136,59 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages, jobs, onEdit
     scrollToBottom();
   }, [messages]);
 
+  // --- Voice Input ---
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const sr = new SpeechRecognition();
+        sr.continuous = false;
+        sr.interimResults = false;
+        sr.lang = 'en-US';
+        recognitionRef.current = sr;
+      }
+    }
+  }, []);
+
+  const handleToggleVoice = useCallback(() => {
+    const sr = recognitionRef.current;
+    if (!sr) return;
+
+    if (isRecording) {
+      sr.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    setIsRecording(true);
+
+    sr.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setIsRecording(false);
+      // Set the transcribed text and auto-send
+      setInputText(transcript);
+      // Use a short timeout so React processes the state update before we submit
+      setTimeout(() => {
+        const form = document.getElementById('ntim-chat-form') as HTMLFormElement;
+        form?.requestSubmit();
+      }, 100);
+    };
+
+    sr.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+    };
+
+    sr.onend = () => {
+      setIsRecording(false);
+    };
+
+    sr.start();
+  }, [isRecording]);
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputText.trim() || isLoading) return;
@@ -235,8 +288,8 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages, jobs, onEdit
             </div>
 
             <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                ? 'bg-brand-primary text-white rounded-tr-none shadow-brand-primary/20'
-                : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-brand-mint dark:border-slate-700 rounded-tl-none'
+              ? 'bg-brand-primary text-white rounded-tr-none shadow-brand-primary/20'
+              : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-brand-mint dark:border-slate-700 rounded-tl-none'
               }`}>
               {msg.text ? renderMessageText(msg.text) : (isLoading && msg.role === 'model' ? <Loader2 className="animate-spin w-4 h-4" /> : '')}
             </div>
@@ -247,22 +300,42 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages, jobs, onEdit
 
       {/* Input Area */}
       <div className="p-6 bg-white dark:bg-slate-900 border-t border-brand-mint dark:border-slate-800">
-        <form onSubmit={handleSendMessage} className="relative max-w-4xl mx-auto">
+        {isRecording && (
+          <div className="flex items-center justify-center gap-2 mb-3 text-rose-500 animate-pulse">
+            <div className="w-2 h-2 bg-rose-500 rounded-full" />
+            <span className="text-xs font-medium">Listening... speak now</span>
+          </div>
+        )}
+        <form onSubmit={handleSendMessage} id="ntim-chat-form" className="relative max-w-4xl mx-auto">
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Ask Ntim about resume tips, interview prep, or career advice..."
-            className="w-full pl-6 pr-14 py-4 bg-brand-rose dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none shadow-sm transition-all text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
-            disabled={isLoading}
+            className="w-full pl-6 pr-28 py-4 bg-brand-rose dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none shadow-sm transition-all text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
+            disabled={isLoading || isRecording}
           />
-          <button
-            type="submit"
-            disabled={!inputText.trim() || isLoading}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-brand-primary text-white rounded-xl hover:bg-brand-deep disabled:opacity-50 disabled:hover:bg-brand-primary transition-colors shadow-lg shadow-brand-primary/20"
-          >
-            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-          </button>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleToggleVoice}
+              disabled={isLoading}
+              className={`p-2 rounded-xl transition-all disabled:opacity-50 ${isRecording
+                  ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/30'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                }`}
+              title={isRecording ? 'Stop recording' : 'Voice input'}
+            >
+              {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+            <button
+              type="submit"
+              disabled={!inputText.trim() || isLoading}
+              className="p-2 bg-brand-primary text-white rounded-xl hover:bg-brand-deep disabled:opacity-50 disabled:hover:bg-brand-primary transition-colors shadow-lg shadow-brand-primary/20"
+            >
+              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </button>
+          </div>
         </form>
         <div className="text-center mt-3">
           <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
