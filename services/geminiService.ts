@@ -7,9 +7,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 // --- Existing Services ---
 
 export const generateCoverLetter = async (
-  company: string, 
-  role: string, 
-  description: string, 
+  company: string,
+  role: string,
+  description: string,
   userSkills: string = "general professional skills"
 ): Promise<string> => {
   try {
@@ -190,13 +190,33 @@ export const parseAndImproveResume = async (fileBase64: string, mimeType: string
   }
 };
 
-export const createChatSession = (history: Content[] = []) => {
-  // Fix: Using gemini-3-flash-preview for chat interactions
+export const createChatSession = (history: Content[] = [], jobsContext?: string) => {
+  const baseInstruction = "You are Ntim, a friendly, encouraging, and highly knowledgeable job search assistant. You help users with career advice, resume tips, interview preparation, and staying motivated. Keep answers concise and helpful.";
+
+  const jobEditInstruction = jobsContext ? `
+
+CURRENT JOBS DATA:
+${jobsContext}
+
+JOB EDITING CAPABILITY:
+When the user asks you to edit, update, or change an existing job/application, you MUST include an action tag at the END of your message in this exact format:
+[ACTION:EDIT_JOB {"id":"<job_id>","updates":{<field>:<value>}}]
+
+Editable fields: status (must be one of: Applied, Interview, Offer, Rejected, Accepted), salary, location, role, company, notes, followUpDate (YYYY-MM-DD), interviewDate (ISO datetime).
+
+RULES:
+- Match the job by company name, role, or both — use the id from the jobs data
+- Always confirm what you changed in your message text
+- You can include multiple [ACTION:EDIT_JOB ...] tags if the user asks to edit multiple jobs
+- If the user's request is ambiguous about which job, ask for clarification instead of guessing
+- NEVER fabricate job IDs — only use IDs from the CURRENT JOBS DATA above
+- For general questions or advice that don't involve editing jobs, do NOT include any action tags` : '';
+
   return ai.chats.create({
     model: 'gemini-3-flash-preview',
     history: history,
     config: {
-      systemInstruction: "You are Ntim, a friendly, encouraging, and highly knowledgeable job search assistant. You help users with career advice, resume tips, interview preparation, and staying motivated. Keep answers concise and helpful."
+      systemInstruction: baseInstruction + jobEditInstruction
     }
   });
 };
@@ -239,7 +259,7 @@ export const analyzeResumeMatch = async (resumeText: string, jobDescription: str
 
 // Feature 1 Implementation: Skill Gap Roadmap
 export const generateLearningRoadmap = async (
-  missingSkills: string[], 
+  missingSkills: string[],
   role: string
 ): Promise<any> => {
   try {
@@ -355,9 +375,9 @@ export const detectJobRedFlags = async (jobDescription: string): Promise<any> =>
 
 // 3. LinkedIn & Cold Email Writer
 export const generateNetworkingDrafts = async (
-  company: string, 
-  role: string, 
-  hiringManagerName: string, 
+  company: string,
+  role: string,
+  hiringManagerName: string,
   userResumeSummary: string
 ): Promise<any> => {
   try {
@@ -389,9 +409,9 @@ export const generateNetworkingDrafts = async (
 
 // 4. Salary Negotiation Coach
 export const generateNegotiationAdvice = async (
-  role: string, 
-  company: string, 
-  offerAmount: string, 
+  role: string,
+  company: string,
+  offerAmount: string,
   jobDescription: string
 ): Promise<any> => {
   try {

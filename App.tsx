@@ -629,7 +629,7 @@ const App: React.FC = () => {
       case ViewState.AVATAR:
         return <AvatarGenerator onAttachToResume={handleAttachAvatar} />;
       case ViewState.NTIM:
-        return <NtimChat messages={ntimMessages} setMessages={setNtimMessages} />;
+        return <NtimChat messages={ntimMessages} setMessages={setNtimMessages} jobs={jobs} onEditJob={(jobId, updates) => setJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...updates } : j))} />;
       case ViewState.SETTINGS:
         return <Settings jobs={jobs} resume={resume} onImport={handleImportData} onReset={handleResetData} settings={settings} onUpdateSettings={setSettings} />;
       default:

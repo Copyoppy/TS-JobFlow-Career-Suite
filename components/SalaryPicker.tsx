@@ -93,9 +93,10 @@ const SalaryPicker: React.FC<SalaryPickerProps> = ({ value, onChange }) => {
                         type="text"
                         inputMode="numeric"
                         placeholder="Min"
-                        value={minRaw ? formatNumber(parseInt(minRaw, 10)) : ''}
+                        value={minRaw}
                         onChange={handleMinChange}
-                        className="w-full pl-8 pr-3 p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
+                        style={{ paddingLeft: `${Math.max(sym.length * 0.6 + 0.75, 2)}rem` }}
+                        className="w-full pr-3 p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
                     />
                 </div>
 
@@ -108,9 +109,10 @@ const SalaryPicker: React.FC<SalaryPickerProps> = ({ value, onChange }) => {
                         type="text"
                         inputMode="numeric"
                         placeholder="Max"
-                        value={maxRaw ? formatNumber(parseInt(maxRaw, 10)) : ''}
+                        value={maxRaw}
                         onChange={handleMaxChange}
-                        className="w-full pl-8 pr-3 p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
+                        style={{ paddingLeft: `${Math.max(sym.length * 0.6 + 0.75, 2)}rem` }}
+                        className="w-full pr-3 p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
                     />
                 </div>
             </div>
@@ -119,10 +121,9 @@ const SalaryPicker: React.FC<SalaryPickerProps> = ({ value, onChange }) => {
             <label className="flex items-center gap-2 cursor-pointer select-none group">
                 <div
                     className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${negotiable
-                            ? 'bg-brand-primary border-brand-primary'
-                            : 'border-slate-300 dark:border-slate-600 group-hover:border-brand-primary/50'
+                        ? 'bg-brand-primary border-brand-primary'
+                        : 'border-slate-300 dark:border-slate-600 group-hover:border-brand-primary/50'
                         }`}
-                    onClick={() => setNegotiable(!negotiable)}
                 >
                     {negotiable && (
                         <svg width="10" height="8" viewBox="0 0 10 8" fill="none">

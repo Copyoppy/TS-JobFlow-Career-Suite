@@ -1,36 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Send, User, Loader2, Sparkles } from 'lucide-react';
 import { createChatSession } from '../services/geminiService';
 import { GenerateContentResponse, Content } from "@google/genai";
-import { Message } from '../types';
+import { Message, Job } from '../types';
 
 interface NtimChatProps {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  jobs?: Job[];
+  onEditJob?: (jobId: string, updates: Partial<Job>) => void;
 }
+
+// Parse and strip [ACTION:EDIT_JOB {...}] tags from AI response
+const parseActions = (text: string): { cleanText: string; edits: { id: string; updates: Partial<Job> }[] } => {
+  const edits: { id: string; updates: Partial<Job> }[] = [];
+  const actionRegex = /\[ACTION:EDIT_JOB\s+(\{[^\]]+\})\]/g;
+  let match;
+  while ((match = actionRegex.exec(text)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.id && parsed.updates) {
+        edits.push({ id: parsed.id, updates: parsed.updates });
+      }
+    } catch (e) {
+      console.error('Failed to parse action tag:', match[0], e);
+    }
+  }
+  const cleanText = text.replace(/\[ACTION:EDIT_JOB\s+\{[^\]]+\}\]/g, '').trim();
+  return { cleanText, edits };
+};
 
 // Custom Icon for Ntim (Friendly Male/Neutral Avatar)
 const NtimIcon = ({ className, size = 20 }: { className?: string; size?: number }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    xmlns="http://www.w3.org/2000/svg" 
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
     {/* Short Hair / Head top */}
     <path d="M4 8.5c0-3 2.5-5.5 8-5.5s8 2.5 8 5.5" />
     <path d="M4 8.5v2a4 4 0 0 0 4 4" /> {/* Sideburn L */}
     <path d="M20 8.5v2a4 4 0 0 1-4 4" /> {/* Sideburn R */}
-    
+
     {/* Chin */}
     <path d="M8 14.5c0 3 1.5 4.5 4 4.5s4-1.5 4-4.5" />
-    
+
     {/* Ears */}
     <path d="M3 10v2" />
     <path d="M21 10v2" />
@@ -52,7 +73,7 @@ const renderMessageText = (text: string) => {
       let content = part.slice(3, -3);
       // Optional: Remove language identifier from first line if present (e.g. ```javascript)
       content = content.replace(/^[a-z]+\n/, '').trim();
-      
+
       return (
         <pre key={index} className="bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto my-3 text-xs font-mono border border-slate-700 shadow-sm">
           <code>{content}</code>
@@ -65,11 +86,11 @@ const renderMessageText = (text: string) => {
       <div key={index} className="space-y-1">
         {part.split('\n').map((line, lineIdx) => {
           if (!line.trim()) return <div key={lineIdx} className="h-2" />;
-          
+
           // Detect List Items (* or -)
           const isListItem = /^[\*\-]\s/.test(line);
           const cleanLine = isListItem ? line.replace(/^[\*\-]\s/, '') : line;
-          
+
           // Parse Bold (**text**)
           const content = cleanLine.split(/(\*\*.*?\*\*)/g).map((subPart, subIdx) => {
             if (subPart.startsWith('**') && subPart.endsWith('**')) {
@@ -96,10 +117,16 @@ const renderMessageText = (text: string) => {
   });
 };
 
-const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages }) => {
+const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages, jobs, onEditJob }) => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Build a compact jobs context string for the AI
+  const jobsContext = useMemo(() => {
+    if (!jobs || jobs.length === 0) return undefined;
+    return jobs.map(j => `- id:"${j.id}" company:"${j.company}" role:"${j.role}" status:"${j.status}" salary:"${j.salary}" location:"${j.location}"`).join('\n');
+  }, [jobs]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,7 +142,7 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages }) => {
 
     const userMessage = inputText.trim();
     setInputText('');
-    
+
     // Add user message immediately
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userMessage }]);
     setIsLoading(true);
@@ -128,7 +155,7 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages }) => {
         if (last && last.role === msg.role) {
           // Merge with previous message part to avoid "Please ensure that the turn history alternates" error
           if (last.parts && last.parts[0]) {
-             last.parts[0].text += "\n\n" + msg.text;
+            last.parts[0].text += "\n\n" + msg.text;
           }
         } else {
           acc.push({ role: msg.role, parts: [{ text: msg.text }] });
@@ -136,13 +163,13 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages }) => {
         return acc;
       }, []);
 
-      // Create a fresh session with the up-to-date history
-      const chatSession = createChatSession(history);
+      // Create a fresh session with the up-to-date history and jobs context
+      const chatSession = createChatSession(history, jobsContext);
       const result = await chatSession.sendMessageStream({ message: userMessage });
-      
+
       let fullResponse = '';
       const responseId = (Date.now() + 1).toString();
-      
+
       // Add placeholder for AI response
       setMessages(prev => [...prev, { id: responseId, role: 'model', text: '' }]);
 
@@ -150,18 +177,25 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages }) => {
         const c = chunk as GenerateContentResponse;
         const text = c.text || '';
         fullResponse += text;
-        
-        // Update the last message with the accumulated text
-        setMessages(prev => prev.map(msg => 
-          msg.id === responseId ? { ...msg, text: fullResponse } : msg
+
+        // Update the last message with the accumulated text (strip action tags for display)
+        const { cleanText } = parseActions(fullResponse);
+        setMessages(prev => prev.map(msg =>
+          msg.id === responseId ? { ...msg, text: cleanText } : msg
         ));
+      }
+
+      // After full response, apply any job edits
+      const { edits } = parseActions(fullResponse);
+      if (onEditJob && edits.length > 0) {
+        edits.forEach(edit => onEditJob(edit.id, edit.updates));
       }
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { 
-        id: Date.now().toString(), 
-        role: 'model', 
-        text: "I'm having trouble connecting right now. Please try again in a moment." 
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'model',
+        text: "I'm having trouble connecting right now. Please try again in a moment."
       }]);
     } finally {
       setIsLoading(false);
@@ -187,25 +221,23 @@ const NtimChat: React.FC<NtimChatProps> = ({ messages, setMessages }) => {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-brand-rose dark:bg-slate-950 custom-scrollbar">
         {messages.map((msg) => (
-          <div 
-            key={msg.id} 
+          <div
+            key={msg.id}
             className={`flex items-start gap-4 max-w-3xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm ${
-              msg.role === 'user' ? 'bg-brand-deep dark:bg-slate-700' : 'bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700'
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm ${msg.role === 'user' ? 'bg-brand-deep dark:bg-slate-700' : 'bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700'
+              }`}>
               {msg.role === 'user' ? (
                 <User size={16} className="text-white" />
               ) : (
                 <NtimIcon size={16} className="text-brand-primary dark:text-blue-400" />
               )}
             </div>
-            
-            <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
-              msg.role === 'user' 
-                ? 'bg-brand-primary text-white rounded-tr-none shadow-brand-primary/20' 
+
+            <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                ? 'bg-brand-primary text-white rounded-tr-none shadow-brand-primary/20'
                 : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-brand-mint dark:border-slate-700 rounded-tl-none'
-            }`}>
+              }`}>
               {msg.text ? renderMessageText(msg.text) : (isLoading && msg.role === 'model' ? <Loader2 className="animate-spin w-4 h-4" /> : '')}
             </div>
           </div>

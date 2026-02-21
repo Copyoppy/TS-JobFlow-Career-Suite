@@ -19,6 +19,7 @@ import {
   RefreshCw, Trophy, Scale, ExternalLink, GraduationCap, Bell, CalendarClock, CalendarPlus, BellRing, AlertCircle, Clock,
   Link2
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { ATSGauge, parseBold, FormattedDisplay } from './JobTrackerHelpers';
 import AddJobModal from './AddJobModal';
 import CompareOffersModal from './CompareOffersModal';
@@ -190,6 +191,11 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
       setSelectedJob(prev => prev ? { ...prev, status: newStatus } : null);
     }
     setActiveMenuJobId(null);
+
+    // 🎉 Confetti for positive milestones
+    if ([JobStatus.APPLIED, JobStatus.OFFER, JobStatus.ACCEPTED].includes(newStatus)) {
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
+    }
   };
 
   const updateSelectedJob = (updater: (j: Job) => Job) => {
@@ -554,7 +560,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
 
         {/* --- JOB DETAIL PANEL --- */}
         {selectedJob && (
-          <div className="fixed top-16 md:top-0 bottom-0 right-0 z-30 bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-brand-mint dark:border-slate-800 transition-all duration-300 w-full md:w-[650px]">
+          <div className="fixed top-16 md:top-[52px] bottom-0 right-0 z-[60] bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-brand-mint dark:border-slate-800 transition-all duration-300 w-full md:w-[650px]">
             {/* Detail Header */}
             <div className="p-6 border-b border-brand-mint dark:border-slate-800 flex justify-between items-start bg-white dark:bg-slate-900 z-10">
               <div>
