@@ -52,19 +52,30 @@ const CalendarView: React.FC<CalendarViewProps> = ({ jobs, onNavigateToJob }) =>
         const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
 
         days.push(
-            <div key={d} className={`h-32 border-b border-r border-slate-100 dark:border-slate-800 p-2 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20 ${isToday ? 'bg-brand-rose/30 dark:bg-brand-primary/10' : ''}`}>
+            <div
+                key={d}
+                className={`h-32 border-b border-r border-slate-100 dark:border-slate-800 p-2 transition-all group ${isToday ? 'bg-brand-rose/30 dark:bg-brand-primary/10' : ''}`}
+            >
                 <div className="flex justify-between items-center mb-2">
-                    <span className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-xl ${isToday ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/30' : 'text-slate-400 dark:text-slate-500'}`}>{d}</span>
-                    {dayEvents.length > 0 && <span className="w-2 h-2 rounded-full bg-brand-primary"></span>}
+                    <button
+                        onClick={() => dayEvents.length > 0 ? onNavigateToJob(dayEvents[0].job) : null}
+                        className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-xl transition-transform hover:scale-110 active:scale-95 ${isToday ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/30' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary'}`}
+                    >
+                        {d}
+                    </button>
+                    {dayEvents.length > 0 && <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse"></span>}
                 </div>
-                <div className="space-y-1.5 overflow-y-auto max-h-[85px] custom-scrollbar pr-1">
+                <div
+                    className="space-y-1.5 overflow-y-auto max-h-[85px] custom-scrollbar pr-1"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {dayEvents.map((event, idx) => (
                         <button
                             key={`${event.job.id}-${event.type}-${idx}`}
                             onClick={() => onNavigateToJob(event.job)}
                             className={`w-full text-left p-1.5 rounded-lg border-l-2 transition-all hover:scale-[1.02] shadow-sm ${event.type === 'interview'
-                                    ? 'bg-brand-primary/10 dark:bg-brand-primary/20 border-brand-primary'
-                                    : 'bg-amber-500/10 dark:bg-amber-500/20 border-amber-500'
+                                ? 'bg-brand-primary/10 dark:bg-brand-primary/20 border-brand-primary'
+                                : 'bg-amber-500/10 dark:bg-amber-500/20 border-amber-500'
                                 }`}
                         >
                             <div className={`text-[10px] font-bold truncate ${event.type === 'interview' ? 'text-brand-deep dark:text-brand-primary' : 'text-amber-700 dark:text-amber-400'}`}>

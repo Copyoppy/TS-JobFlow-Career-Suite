@@ -93,10 +93,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
         onClick={onClose}
       />
 
-      <div className={`
-        fixed md:sticky top-0 h-screen w-64 bg-brand-primary border-r border-white/10 flex flex-col flex-shrink-0 no-print shadow-xl shadow-black/20 z-50 transition-transform duration-300 transform
-        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      <div
+        className={`
+          fixed md:sticky top-0 h-screen w-64 bg-brand-primary border-r border-white/10 flex flex-col flex-shrink-0 no-print shadow-xl shadow-black/20 z-50 transition-transform duration-300 
+          ${isOpen ? 'translate-x-0 transform' : '-translate-x-full transform md:transform-none'}
+        `}
+        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as React.CSSProperties}
+      >
         <style>
           {`
           @keyframes border-flow {

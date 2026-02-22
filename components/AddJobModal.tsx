@@ -1,6 +1,6 @@
 import React from 'react';
-import { Job, JobStatus } from '../types';
-import { X, Loader2, Sparkles } from 'lucide-react';
+import { Job, JobStatus, Recruiter } from '../types';
+import { X, Loader2, Sparkles, Users } from 'lucide-react';
 import SalaryPicker from './SalaryPicker';
 
 interface AddJobModalProps {
@@ -10,6 +10,7 @@ interface AddJobModalProps {
     isGenerating: boolean;
     onSubmit: (e: React.FormEvent) => void;
     onClose: () => void;
+    recruiters: Recruiter[];
 }
 
 const AddJobModal: React.FC<AddJobModalProps> = ({
@@ -19,6 +20,7 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
     isGenerating,
     onSubmit,
     onClose,
+    recruiters
 }) => {
     return (
         <div className="fixed inset-0 bg-brand-deep/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -28,9 +30,25 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                     <button onClick={onClose} className="text-slate-400 hover:text-brand-primary transition"><X size={24} /></button>
                 </div>
                 <form onSubmit={onSubmit} className="p-6 space-y-4">
-                    <input required type="text" placeholder="Company" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
-                    <input required type="text" placeholder="Role Title" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.role} onChange={e => setNewJob({ ...newJob, role: e.target.value })} />
-                    <input type="text" placeholder="Location" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <input required type="text" placeholder="Company" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
+                        <input required type="text" placeholder="Role Title" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.role} onChange={e => setNewJob({ ...newJob, role: e.target.value })} />
+                    </div>
+
+                    <div className="flex gap-4">
+                        <input type="text" placeholder="Location" className="flex-1 p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
+                        <select
+                            className="flex-1 p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium"
+                            value={newJob.recruiterId || ''}
+                            onChange={(e) => setNewJob({ ...newJob, recruiterId: e.target.value })}
+                        >
+                            <option value="">No Recruiter</option>
+                            {recruiters.map(r => (
+                                <option key={r.id} value={r.id}>{r.name} ({r.agency || 'Indep'})</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <SalaryPicker value={newJob.salary} onChange={salary => setNewJob({ ...newJob, salary })} />
                     <input type="url" placeholder="Application URL (optional)" className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" value={newJob.applicationUrl || ''} onChange={e => setNewJob({ ...newJob, applicationUrl: e.target.value })} />
                     <textarea className="w-full p-2.5 border border-brand-mint dark:border-slate-700 rounded-lg text-sm h-24 resize-none outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white" placeholder="Job Description..." value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Job, JobStatus, Resume, TailoredResume, OfferComparisonResult, AppSettings } from '../types';
+import { Job, JobStatus, Resume, TailoredResume, OfferComparisonResult, AppSettings, Recruiter } from '../types';
 import {
   generateCoverLetter,
   generateInterviewGuide,
@@ -37,6 +37,7 @@ interface JobTrackerProps {
   onClearStatusFilter?: () => void;
   initialJobId?: string | null;
   onJobSelected?: (jobId: string | null) => void;
+  recruiters: Recruiter[];
 }
 
 
@@ -48,7 +49,7 @@ const KANBAN_COLUMNS = [
   { id: JobStatus.REJECTED, label: 'Rejected', color: 'bg-rose-50 border-rose-100 text-rose-800 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-200' },
 ];
 
-const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings, statusFilter, onClearStatusFilter, initialJobId, onJobSelected }) => {
+const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'applications', onStatusChange, resume, setResume, settings, statusFilter, onClearStatusFilter, initialJobId, onJobSelected, recruiters }) => {
   const { showToast } = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -542,7 +543,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
                       return (
                         <div key={column.id} className={`min-w-[280px] w-[280px] flex-shrink-0 flex flex-col h-full rounded-2xl border ${column.color} bg-opacity-30`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, column.id)}>
                           <div className="p-3 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
-                            <h3 className={`font-bold text-sm ${column.color.split(' ')[2]}`}>{column.label}</h3>
+                            <h3 className={`font-bold text-sm ${column.color.split(' ').filter(c => c.includes('text-')).join(' ')}`}>{column.label}</h3>
                             <span className="text-xs font-medium px-2 py-0.5 bg-white/50 dark:bg-black/20 rounded-full">{columnJobs.length}</span>
                           </div>
                           <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
@@ -715,6 +716,25 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
                       </div>
                     </div>
                   )}
+
+                  {/* Recruiter Selector */}
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-brand-mint dark:border-slate-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs text-brand-deep dark:text-blue-300 uppercase font-bold flex items-center gap-1.5">
+                        <Users size={12} /> Linked Recruiter
+                      </div>
+                    </div>
+                    <select
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg p-2 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-brand-primary/20"
+                      value={selectedJob.recruiterId || ''}
+                      onChange={(e) => updateSelectedJob(j => ({ ...j, recruiterId: e.target.value }))}
+                    >
+                      <option value="">No Recruiter Linked</option>
+                      {recruiters.map(r => (
+                        <option key={r.id} value={r.id}>{r.name} ({r.agency || 'Indep'})</option>
+                      ))}
+                    </select>
+                  </div>
 
                   <div>
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-2 mt-4">Description</h3>
@@ -1184,6 +1204,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
           isGenerating={isGenerating}
           onSubmit={handleCreateJob}
           onClose={() => setShowAddModal(false)}
+          recruiters={recruiters}
         />
       )}
 

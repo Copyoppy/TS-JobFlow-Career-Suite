@@ -10,6 +10,8 @@ import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
 import AuthScreen from './components/AuthScreen';
 import CalendarView from './components/CalendarView';
+import Insights from './components/Insights';
+import RecruiterCRM from './components/RecruiterCRM';
 import { ToastProvider } from './components/Toast';
 import { NotificationProvider, useNotifications } from './components/NotificationContext';
 import NotificationBell from './components/NotificationBell';
@@ -42,7 +44,9 @@ const MOCK_JOBS: Job[] = [
       pros: ["High Performance Tech Stack", "Hybrid Work"],
       cons: ["Startups often have long hours"],
       verdict: "Safe"
-    }
+    },
+    interviewDate: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days from now
+    recruiterId: 'rec-1'
   },
   {
     id: 'job-2',
@@ -55,7 +59,9 @@ const MOCK_JOBS: Job[] = [
     description: 'Join our high-frequency trading platform team. Requires deep knowledge of Node.js, low-latency systems, and React for data visualization dashboards.',
     coverLetter: '',
     email: 'careers@quantumfin.tech',
-    origin: 'application'
+    origin: 'application',
+    followUpDate: getPastDate(-2), // 2 days from now
+    recruiterId: 'rec-2'
   },
   {
     id: 'job-3',
@@ -72,7 +78,8 @@ const MOCK_JOBS: Job[] = [
     negotiation: {
       script: "I'm very excited about the offer to join EcoVision. Based on my research of similar roles in the market and my specialized experience with React and D3.js, I was hoping we could discuss moving the base salary to €95k...",
       strategy: "Focus on your unique hybrid design/dev skills which are rare."
-    }
+    },
+    recruiterId: 'rec-3'
   },
   {
     id: 'job-4',
@@ -85,7 +92,8 @@ const MOCK_JOBS: Job[] = [
     description: 'Focus on application security and penetration testing for our enterprise clients.',
     coverLetter: 'Dear Hiring Team...',
     email: 'jobs@cyberguard.sec',
-    origin: 'application'
+    origin: 'application',
+    recruiterId: 'rec-4'
   },
   {
     id: 'job-5',
@@ -98,7 +106,8 @@ const MOCK_JOBS: Job[] = [
     description: 'Architecting the next gen logistics tracking system using microservices.',
     coverLetter: '',
     email: 'hr@global-logistics.com',
-    origin: 'application'
+    origin: 'application',
+    recruiterId: 'rec-5'
   },
   {
     id: 'job-6',
@@ -111,7 +120,9 @@ const MOCK_JOBS: Job[] = [
     description: 'Developing computer vision models for autonomous vehicle navigation systems using PyTorch and TensorFlow.',
     email: 'careers@autodrive.ai',
     origin: 'application',
-    interviewGuide: '**Company Insight:** AutoDrive is a leader in L4 autonomy...\n\n**Key Questions:**\n1. Explain object detection architectures.\n2. How do you handle sensor fusion?'
+    interviewGuide: '**Company Insight:** AutoDrive is a leader in L4 autonomy...\n\n**Key Questions:**\n1. Explain object detection architectures.\n2. How do you handle sensor fusion?',
+    interviewDate: new Date(Date.now() + 86400000 * 5).toISOString(), // 5 days from now
+    recruiterId: 'rec-6'
   },
   {
     id: 'job-7',
@@ -123,7 +134,8 @@ const MOCK_JOBS: Job[] = [
     dateApplied: getPastDate(8),
     description: 'Building scalable e-commerce APIs with Node.js and GraphQL to handle Black Friday traffic loads.',
     email: 'jobs@streamline.com',
-    origin: 'application'
+    origin: 'application',
+    recruiterId: 'rec-2'
   },
   {
     id: 'job-8',
@@ -135,7 +147,8 @@ const MOCK_JOBS: Job[] = [
     dateApplied: getPastDate(25),
     description: 'Main iOS app development using Swift and SwiftUI for a major regional bank.',
     email: 'recruiting@bluesky.bank',
-    origin: 'application'
+    origin: 'application',
+    recruiterId: 'rec-4'
   },
   {
     id: 'job-9',
@@ -151,7 +164,8 @@ const MOCK_JOBS: Job[] = [
     negotiation: {
       script: "I'm thrilled about the mission at GreenEnergy. Given the specific IoT experience I bring...",
       strategy: "Emphasize the direct relevance of your IoT background."
-    }
+    },
+    recruiterId: 'rec-3'
   },
   {
     id: 'job-10',
@@ -165,7 +179,6 @@ const MOCK_JOBS: Job[] = [
     email: 'careers@edutech.global',
     origin: 'application'
   },
-  // --- NEW 5 JOBS ADDED BELOW ---
   {
     id: 'job-11',
     company: 'Summit Peak',
@@ -189,7 +202,9 @@ const MOCK_JOBS: Job[] = [
     description: 'Leading a team of 6 engineers to rebuild our core banking ledger system using Go and Kafka.',
     email: 'hiring@riverbank.com',
     origin: 'application',
-    interviewGuide: '**Company Insight:** Traditional bank moving to cloud-native...\n\n**Key Questions:**\n1. Experience with event sourcing?\n2. How do you handle distributed transactions?'
+    interviewGuide: '**Company Insight:** Traditional bank moving to cloud-native...\n\n**Key Questions:**\n1. Experience with event sourcing?\n2. How do you handle distributed transactions?',
+    interviewDate: new Date(Date.now() + 86400000 * 1).toISOString(), // Tomorrow
+    recruiterId: 'rec-7'
   },
   {
     id: 'job-13',
@@ -201,7 +216,8 @@ const MOCK_JOBS: Job[] = [
     dateApplied: getPastDate(6),
     description: 'Creating accessible and interactive learning modules for K-12 students using Vue.js.',
     email: 'careers@brightfuture.ed',
-    origin: 'application'
+    origin: 'application',
+    recruiterId: 'rec-1'
   },
   {
     id: 'job-14',
@@ -213,7 +229,8 @@ const MOCK_JOBS: Job[] = [
     dateApplied: getPastDate(18),
     description: 'Building data pipelines for large-scale consumer behavior analysis.',
     email: 'talent@darkmatter.io',
-    origin: 'application'
+    origin: 'application',
+    recruiterId: 'rec-2'
   },
   {
     id: 'job-15',
@@ -229,7 +246,439 @@ const MOCK_JOBS: Job[] = [
     negotiation: {
       script: "Thank you for the offer. Starlight is my top choice. However, I have another offer at $190k...",
       strategy: "Leverage competing offer from AutoDrive AI (if valid)."
-    }
+    },
+    recruiterId: 'rec-6'
+  },
+  // --- ADDITIONAL MOCK JOBS ---
+  {
+    id: 'job-16',
+    company: 'Astra Biotech',
+    role: 'Bioinformatics Engineer',
+    location: 'Cambridge, MA',
+    salary: '$150k - $170k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(1),
+    description: 'Developing algorithms to analyze genomic data and accelerate drug discovery.',
+    email: 'careers@astrabio.com',
+    origin: 'application',
+    recruiterId: 'rec-9'
+  },
+  {
+    id: 'job-17',
+    company: 'Zenith Retail',
+    role: 'Mobile Lead (Android)',
+    location: 'Remote (US)',
+    salary: '$175k',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(4),
+    description: 'Leading the Android development team for Zenith’s global retail app.',
+    email: 'hiring@zenith.com',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 3).toISOString(),
+    recruiterId: 'rec-7'
+  },
+  {
+    id: 'job-18',
+    company: 'Solaris Space',
+    role: 'Embedded Systems Engineer',
+    location: 'Denver, CO',
+    salary: '$160k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(9),
+    description: 'Engineering the flight software for Solaris’s next-generation satellite constellation.',
+    email: 'hr@solaris.space',
+    origin: 'application'
+  },
+  {
+    id: 'job-19',
+    company: 'HyperApp',
+    role: 'Senior React Developer',
+    location: 'Remote (Global)',
+    salary: '$140k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(11),
+    description: 'Scaling our flagship productivity application to millions of users worldwide.',
+    email: 'recruiting@hyperapp.io',
+    origin: 'offer'
+  },
+  {
+    id: 'job-20',
+    company: 'Titan Insurance',
+    role: 'Backend Engineer (Java)',
+    location: 'Columbus, OH',
+    salary: '$135k',
+    status: JobStatus.REJECTED,
+    dateApplied: getPastDate(40),
+    description: 'Modernizing core insurance processing systems using Spring Boot and microservices.',
+    email: 'jobs@titanins.com',
+    origin: 'application'
+  },
+  {
+    id: 'job-21',
+    company: 'Easel Art',
+    role: 'UI/UX Engineer',
+    location: 'Brooklyn, NY',
+    salary: '$150k',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(2),
+    description: 'Collaborating with artists and designers to build beautiful creation tools for the web.',
+    email: 'talent@easel.art',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 6).toISOString()
+  },
+  {
+    id: 'job-22',
+    company: 'Nova Crypto',
+    role: 'Smart Contract Developer',
+    location: 'Miami, FL (Hybrid)',
+    salary: '$180k + Tokens',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(3),
+    description: 'Building secure and efficient DeFi protocols on Ethereum and Polygon.',
+    email: 'hiring@novacrypto.xyz',
+    origin: 'application'
+  },
+  {
+    id: 'job-23',
+    company: 'PetPals',
+    role: 'Frontend Developer',
+    location: 'Remote (US)',
+    salary: '$125k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(14),
+    description: 'Empowering pet owners with high-quality telehealth and community resources.',
+    email: 'careers@petpals.com',
+    origin: 'offer'
+  },
+  {
+    id: 'job-24',
+    company: 'Swift Logistics',
+    role: 'Warehouse Systems Architect',
+    location: 'Dallas, TX',
+    salary: '$165k',
+    status: JobStatus.ACCEPTED,
+    dateApplied: getPastDate(45),
+    description: 'Designing automated warehouse management systems to optimize shipping efficiency.',
+    email: 'hr@swiftlog.com',
+    origin: 'application'
+  },
+  {
+    id: 'job-25',
+    company: 'CloudScale',
+    role: 'Principal SRE',
+    location: 'Seattle, WA',
+    salary: '$210k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(0),
+    description: 'Driving reliability and scalability across our extensive cloud-hosting platform.',
+    email: 'jobs@cloudscale.net',
+    origin: 'application'
+  },
+  {
+    id: 'job-26',
+    company: 'Oceanic Research',
+    role: 'Data Scientist',
+    location: 'San Diego, CA (Hybrid)',
+    salary: '$155k',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(10),
+    description: 'Analyzing oceanic data to model climate change impact and support marine conservation.',
+    email: 'research@oceanic.org',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 8).toISOString()
+  },
+  {
+    id: 'job-27',
+    company: 'Peak Software',
+    role: 'C++ Developer',
+    location: 'Remote (Canada)',
+    salary: '$140k CAD',
+    status: JobStatus.REJECTED,
+    dateApplied: getPastDate(30),
+    description: 'Improving the performance of our industry-leading 3D rendering engine.',
+    email: 'careers@peaksoftware.ca',
+    origin: 'application'
+  },
+  {
+    id: 'job-28',
+    company: 'Vital Health',
+    role: 'Security Analyst',
+    location: 'Nashville, TN',
+    salary: '$130k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(12),
+    description: 'Ensuring HIPAA compliance and strengthening our cybersecurity posture.',
+    email: 'security@vitalhealth.com',
+    origin: 'application'
+  },
+  {
+    id: 'job-29',
+    company: 'Skyway Travel',
+    role: 'Mobile Engineer (SwiftUI)',
+    location: 'Remote (Global)',
+    salary: '$150k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(18),
+    description: 'Building world-class travel experiences for iPhone and iPad.',
+    email: 'travel@skyway.io',
+    origin: 'offer'
+  },
+  {
+    id: 'job-30',
+    company: 'Frontier AI',
+    role: 'NLP Researcher',
+    location: 'San Francisco, CA',
+    salary: '$200k + Equity',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(5),
+    description: 'Advancing the state-of-the-art in large language models and conversational agents.',
+    email: 'research@frontier.ai',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 4).toISOString()
+  },
+  {
+    id: 'job-31',
+    company: 'Vanguard Media',
+    role: 'Content Platform Lead',
+    location: 'New York, NY',
+    salary: '$180k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(2),
+    description: 'Developing the future of digital journalism and media consumption.',
+    email: 'media@vanguard.com',
+    origin: 'application'
+  },
+  {
+    id: 'job-32',
+    company: 'Bolt Payments',
+    role: 'API Engineer',
+    location: 'Remote (US)',
+    salary: '$160k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(6),
+    description: 'Building the fastest checkout experience on the internet.',
+    email: 'hiring@bolt.com',
+    origin: 'offer'
+  },
+  {
+    id: 'job-33',
+    company: 'Ironclad Security',
+    role: 'Staff Security Engineer',
+    location: 'Arlington, VA',
+    salary: '$190k',
+    status: JobStatus.REJECTED,
+    dateApplied: getPastDate(50),
+    description: 'Leading defensive security initiatives for federal and commercial clients.',
+    email: 'iron@clad.sec',
+    origin: 'application'
+  },
+  {
+    id: 'job-34',
+    company: 'Leaf & Stem',
+    role: 'E-commerce Dev',
+    location: 'Portland, OR',
+    salary: '$120k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(14),
+    description: 'Maintaining and enhancing our Shopify-based floral delivery platform.',
+    email: 'hello@leafstem.com',
+    origin: 'application'
+  },
+  {
+    id: 'job-35',
+    company: 'Aura Fintech',
+    role: 'Compliance Officer',
+    location: 'Remote (US)',
+    salary: '$140k',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(8),
+    description: 'Managing regulatory filings and ensuring AML compliance across our global operations.',
+    email: 'aura@fintech.co',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 7).toISOString()
+  },
+  {
+    id: 'job-36',
+    company: 'Silver Lining',
+    role: 'Cloud Architect',
+    location: 'Chicago, IL (Hybrid)',
+    salary: '$185k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(20),
+    description: 'Helping enterprises transition their legacy infrastructure to modern cloud-native environments.',
+    email: 'silver@lining.cloud',
+    origin: 'application'
+  },
+  {
+    id: 'job-37',
+    company: 'Mainframe Labs',
+    role: 'Rust Developer',
+    location: 'Remote (Europe)',
+    salary: '€90k - €110k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(22),
+    description: 'Building high-performance blockchain infrastructure using Rust.',
+    email: 'labs@mainframe.xyz',
+    origin: 'offer'
+  },
+  {
+    id: 'job-38',
+    company: 'Crest View',
+    role: 'Senior Project Manager',
+    location: 'Salt Lake City, UT',
+    salary: '$145k',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(12),
+    description: 'Driving the successful delivery of complex software projects for our diverse client base.',
+    email: 'hiring@crestview.pm',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 9).toISOString()
+  },
+  {
+    id: 'job-39',
+    company: 'Blue Dot',
+    role: 'GIS Analyst',
+    location: 'Denver, CO',
+    salary: '$115k',
+    status: JobStatus.REJECTED,
+    dateApplied: getPastDate(60),
+    description: 'Applying spatial thinking and data analysis to solve complex environmental and urban planning challenges.',
+    email: 'jobs@bluedot.gis',
+    origin: 'application'
+  },
+  {
+    id: 'job-40',
+    company: 'NexGen Gaming',
+    role: 'Engine Engineer',
+    location: 'Remote (US)',
+    salary: '$165k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(15),
+    description: 'Optimizing and expanding our proprietary game engine for the next generation of console and PC games.',
+    email: 'nex@gen.game',
+    origin: 'application'
+  },
+  {
+    id: 'job-41',
+    company: 'BioLogic',
+    role: 'Scientific Programmer',
+    location: 'Boston, MA',
+    salary: '$140k',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(6),
+    description: 'Bridging the gap between biology and computing to solve the world’s most pressing health issues.',
+    email: 'careers@biologic.bio',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 10).toISOString()
+  },
+  {
+    id: 'job-42',
+    company: 'Clearwater Systems',
+    role: 'Firmware Engineer',
+    location: 'Austin, TX (Hybrid)',
+    salary: '$150k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(25),
+    description: 'Developing the firmware for our high-precision water quality sensors.',
+    email: 'clear@water.sys',
+    origin: 'offer'
+  },
+  {
+    id: 'job-43',
+    company: 'SwiftPay',
+    role: 'Lead Full Stack',
+    location: 'Remote (Global)',
+    salary: '$190k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(4),
+    description: 'Leading the development of our next-gen mobile payment and digital wallet platform.',
+    email: 'hiring@swiftpay.io',
+    origin: 'application'
+  },
+  {
+    id: 'job-44',
+    company: 'Stellar Tech',
+    role: 'Systems Admin',
+    location: 'Phoenix, AZ',
+    salary: '$120k',
+    status: JobStatus.REJECTED,
+    dateApplied: getPastDate(70),
+    description: 'Managing and securing our server infrastructure and corporate network.',
+    email: 'jobs@stellar.tech',
+    origin: 'application'
+  },
+  {
+    id: 'job-45',
+    company: 'Evergreen Edu',
+    role: 'Content Specialist',
+    location: 'Remote (US)',
+    salary: '$105k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(10),
+    description: 'Creating and curating engaging educational content for our online K-12 learning platform.',
+    email: 'hello@evergreen.ed',
+    origin: 'application'
+  },
+  {
+    id: 'job-46',
+    company: 'Nova Home',
+    role: 'UX Designer',
+    location: 'Seattle, WA (Hybrid)',
+    salary: '$145k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(30),
+    description: 'Designing intuitive and delightful user experiences for our suite of smart home management tools.',
+    email: 'nova@home.xyz',
+    origin: 'offer'
+  },
+  {
+    id: 'job-47',
+    company: 'Atlas Mapping',
+    role: 'Data Engineer (Scala)',
+    location: 'Remote (Canada)',
+    salary: '$155k CAD',
+    status: JobStatus.INTERVIEW,
+    dateApplied: getPastDate(15),
+    description: 'Processing and managing global mapping data to empower world-class navigation experiences.',
+    email: 'jobs@atlas.map',
+    origin: 'application',
+    interviewDate: new Date(Date.now() + 86400000 * 12).toISOString()
+  },
+  {
+    id: 'job-48',
+    company: 'Fusion Lab',
+    role: 'Front End Engineer',
+    location: 'Portland, OR',
+    salary: '$135k',
+    status: JobStatus.REJECTED,
+    dateApplied: getPastDate(80),
+    description: 'Developing the interface for our proprietary research management software.',
+    email: 'lab@fusion.io',
+    origin: 'application'
+  },
+  {
+    id: 'job-49',
+    company: 'Prime Retail',
+    role: 'Back End Developer',
+    location: 'Columbus, OH',
+    salary: '$140k',
+    status: JobStatus.APPLIED,
+    dateApplied: getPastDate(20),
+    description: 'Designing and scaling back-end services to power our high-volume retail platform.',
+    email: 'jobs@primeretail.com',
+    origin: 'application'
+  },
+  {
+    id: 'job-50',
+    company: 'Echo Audio',
+    role: 'Audio Software Engineer',
+    location: 'Remote (US)',
+    salary: '$160k',
+    status: JobStatus.OFFER,
+    dateApplied: getPastDate(35),
+    description: 'Building high-performance audio processing software for the next generation of music production.',
+    email: 'echo@audio.co',
+    origin: 'offer'
   }
 ];
 
@@ -357,6 +806,19 @@ const MOCK_RESUME: Resume = {
     }
   ]
 };
+
+const MOCK_RECRUITERS: Recruiter[] = [
+  { id: 'rec-1', name: 'Sarah Chen', agency: 'TechTalent Partners', email: 'sarah@techtalent.io', linkedin: 'linkedin.com/in/sarahchen', phone: '+1 (415) 555-0101', notes: 'Very responsive, specializes in Frontend roles.', lastContactDate: getPastDate(2) },
+  { id: 'rec-2', name: 'Marcus Bloom', agency: 'Quantum Search', email: 'marcus@quantumsearch.com', linkedin: 'linkedin.com/in/mbloom', notes: 'Direct and focused on FinTech.', lastContactDate: getPastDate(5) },
+  { id: 'rec-3', name: 'Elena Rodriguez', agency: 'EcoRecruit', email: 'elena@ecorecruit.eu', phone: '+44 20 7946 0123', notes: 'Passionate about sustainability focus.', lastContactDate: getPastDate(15) },
+  { id: 'rec-4', name: 'David Smith', agency: 'CyberHire', email: 'david.smith@cyberhire.sec', linkedin: 'linkedin.com/in/dsmith-sec', notes: 'Expert in cybersecurity placements.', lastContactDate: getPastDate(20) },
+  { id: 'rec-5', name: 'Jessica Wu', agency: 'Global Logistics Talent', email: 'jwu@gl-talent.com', notes: 'Focuses on architectural and solutions roles.', lastContactDate: getPastDate(10) },
+  { id: 'rec-6', name: 'Michael O\'Connor', agency: 'AutoDrive Talent', email: 'm.oconnor@autodrive-talent.ai', phone: '+1 (412) 555-0789', notes: 'Specializes in ML and Computer Vision.', lastContactDate: getPastDate(3) },
+  { id: 'rec-7', name: 'Lisa Varma', agency: 'Retail Connect', email: 'lisa.v@retailconnect.com', notes: 'Great network in mobile/app development.', lastContactDate: getPastDate(4) },
+  { id: 'rec-8', name: 'Tom Hiddleston', agency: 'Summit Search', email: 'tom@summitsearch.co', linkedin: 'linkedin.com/in/thiddleston', notes: 'Handles DevOps and SRE roles.', lastContactDate: getPastDate(1) },
+  { id: 'rec-9', name: 'Rachel Zane', agency: 'EduSearch', email: 'rachel@edusearch.global', notes: 'Very helpful with React/Frontend specific roles.', lastContactDate: getPastDate(30) },
+  { id: 'rec-10', name: 'James Pearson', agency: 'Astra Biotech Recruitment', email: 'j.pearson@astrabio.com', notes: 'Focuses on bioinformatics and health-tech.', lastContactDate: getPastDate(1) }
+];
 
 const MOCK_MESSAGES: Message[] = [
   {
@@ -488,7 +950,19 @@ const App: React.FC = () => {
     try {
       const savedJobs = localStorage.getItem('jobflow_jobs');
       const parsedJobs = savedJobs ? JSON.parse(savedJobs) : null;
-      return (parsedJobs && parsedJobs.length > 0) ? parsedJobs : MOCK_JOBS;
+      let initialJobs = (parsedJobs && parsedJobs.length > 0) ? parsedJobs : MOCK_JOBS;
+
+      // Sync recruiterId from MOCK_JOBS if missing in saved jobs (for mock job entries)
+      if (parsedJobs) {
+        initialJobs = initialJobs.map(job => {
+          const mockJob = MOCK_JOBS.find(mj => mj.id === job.id);
+          if (mockJob && mockJob.recruiterId && !job.recruiterId) {
+            return { ...job, recruiterId: mockJob.recruiterId };
+          }
+          return job;
+        });
+      }
+      return initialJobs;
     } catch (e) {
       console.error("Failed to parse jobs from local storage", e);
       return MOCK_JOBS;
@@ -510,8 +984,17 @@ const App: React.FC = () => {
   const [recruiters, setRecruiters] = useState<Recruiter[]>(() => {
     try {
       const saved = localStorage.getItem('jobflow_recruiters');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+      const parsed = saved ? JSON.parse(saved) : [];
+
+      // Ensure MOCK_RECRUITERS are present
+      const merged = [...parsed];
+      MOCK_RECRUITERS.forEach(mr => {
+        if (!merged.find(r => r.id === mr.id)) {
+          merged.push(mr);
+        }
+      });
+      return merged;
+    } catch { return MOCK_RECRUITERS; }
   });
 
   // Resumes State (Migration from single to multi)
@@ -650,11 +1133,18 @@ const App: React.FC = () => {
       case ViewState.DASHBOARD:
         return <Dashboard jobs={jobs} onViewChange={setCurrentView} userName={userName} onCardClick={handleDashboardCardClick} />;
       case ViewState.JOBS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} />;
+        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} recruiters={recruiters} />;
       case ViewState.OFFERS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} />;
+        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} recruiters={recruiters} />;
       case ViewState.RESUME:
-        return <ResumeBuilder resume={resume} setResume={setResume} />;
+        return (
+          <ResumeBuilder
+            resumes={resumes}
+            setResumes={setResumes}
+            activeResumeId={activeResumeId}
+            onSetActiveResume={setActiveResumeId}
+          />
+        );
       case ViewState.AVATAR:
         return <AvatarGenerator onAttachToResume={handleAttachAvatar} />;
       case ViewState.NTIM:
@@ -662,11 +1152,11 @@ const App: React.FC = () => {
       case ViewState.SETTINGS:
         return <Settings jobs={jobs} resume={resume} onImport={handleImportData} onReset={handleResetData} settings={settings} onUpdateSettings={setSettings} />;
       case ViewState.CRM:
-        return <div className="p-8"><h1 className="text-2xl font-bold text-brand-deep dark:text-white">Recruiter CRM (Coming Soon)</h1></div>;
+        return <RecruiterCRM recruiters={recruiters} setRecruiters={setRecruiters} jobs={jobs} onNavigateToJob={handleNavigateToJob} />;
       case ViewState.CALENDAR:
         return <CalendarView jobs={jobs} onNavigateToJob={handleNavigateToJob} />;
       case ViewState.INSIGHTS:
-        return <div className="p-8"><h1 className="text-2xl font-bold text-brand-deep dark:text-white">Search Insights (Coming Soon)</h1></div>;
+        return <Insights jobs={jobs} />;
       default:
         return <Dashboard jobs={jobs} onViewChange={setCurrentView} onCardClick={handleDashboardCardClick} />;
     }

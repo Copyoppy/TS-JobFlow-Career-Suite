@@ -4,16 +4,66 @@ import { Printer, Plus, Trash2, ChevronDown, ChevronUp, Image as ImageIcon, Uplo
 import { parseAndImproveResume, generateResumeSummary } from '../services/geminiService';
 
 interface ResumeBuilderProps {
-  resume: Resume;
-  setResume: React.Dispatch<React.SetStateAction<Resume>>;
+  resumes: Resume[];
+  setResumes: React.Dispatch<React.SetStateAction<Resume[]>>;
+  activeResumeId: string;
+  onSetActiveResume: (id: string) => void;
 }
 
-const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
+const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resumes, setResumes, activeResumeId, onSetActiveResume }) => {
+  const resume = resumes.find(r => r.id === activeResumeId) || resumes[0];
+  const setResume = (updater: React.SetStateAction<Resume>) => {
+    setResumes(prev => prev.map(r => {
+      if (r.id === activeResumeId) {
+        return typeof updater === 'function' ? (updater as any)(r) : updater;
+      }
+      return r;
+    }));
+  };
+
   const [editMode, setEditMode] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [newName, setNewName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCloneVersion = () => {
+    const newVersion: Resume = {
+      ...resume,
+      id: Date.now().toString(),
+      name: `${resume.name} (Copy)`,
+      isDefault: false,
+      updatedAt: Date.now()
+    };
+    setResumes(prev => [...prev, newVersion]);
+    onSetActiveResume(newVersion.id);
+  };
+
+  const handleDeleteVersion = (id: string) => {
+    if (resumes.length <= 1) return;
+    if (window.confirm("Delete this resume version?")) {
+      const remaining = resumes.filter(r => r.id !== id);
+      setResumes(remaining);
+      if (activeResumeId === id) {
+        onSetActiveResume(remaining[0].id);
+      }
+    }
+  };
+
+  const handleSetDefault = (id: string) => {
+    setResumes(prev => prev.map(r => ({
+      ...r,
+      isDefault: r.id === id
+    })));
+  };
+
+  const handleRename = () => {
+    if (!newName.trim()) return;
+    setResumes(prev => prev.map(r => r.id === activeResumeId ? { ...r, name: newName } : r));
+    setShowRenameModal(false);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -87,30 +137,30 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
       reader.onloadend = async () => {
         const result = reader.result as string;
         const mimeType = file.type; // e.g. application/pdf, image/png
-        
+
         try {
           const parsedData = await parseAndImproveResume(result, mimeType);
-          
+
           if (parsedData) {
             setResume(prev => ({
               ...prev,
               ...parsedData,
               // Generate unique IDs for arrays if missing
               experience: parsedData.experience?.map((item: any, idx: number) => ({
-                ...item, 
-                id: Date.now().toString() + 'exp' + idx 
+                ...item,
+                id: Date.now().toString() + 'exp' + idx
               })) || [],
               education: parsedData.education?.map((item: any, idx: number) => ({
-                ...item, 
-                id: Date.now().toString() + 'edu' + idx 
+                ...item,
+                id: Date.now().toString() + 'edu' + idx
               })) || [],
               certifications: parsedData.certifications?.map((item: any, idx: number) => ({
-                ...item, 
-                id: Date.now().toString() + 'cert' + idx 
+                ...item,
+                id: Date.now().toString() + 'cert' + idx
               })) || [],
               projects: parsedData.projects?.map((item: any, idx: number) => ({
-                ...item, 
-                id: Date.now().toString() + 'proj' + idx 
+                ...item,
+                id: Date.now().toString() + 'proj' + idx
               })) || [],
               avatar: prev.avatar // Keep existing avatar if any
             }));
@@ -136,34 +186,59 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
     <div className="flex flex-col md:flex-row h-full">
       {/* Editor Panel - Dark Mode Enabled */}
       <div className={`w-full md:w-1/3 bg-white dark:bg-slate-900 border-r border-brand-mint dark:border-slate-800 overflow-y-auto p-6 no-print custom-scrollbar ${!editMode ? 'hidden md:block' : ''}`}>
-        <div className="flex items-center justify-between mb-6">
-           <h2 className="text-xl font-bold text-brand-deep dark:text-white">Editor</h2>
-           <div className="flex items-center gap-2">
-             <button 
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand-deep dark:text-white">Editor</h2>
+            <div className="flex items-center gap-2">
+              <button
                 onClick={handleSave}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  isSaved 
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' 
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isSaved
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                     : 'bg-brand-rose dark:bg-slate-800 text-brand-primary dark:text-slate-200 border border-brand-mint dark:border-slate-700 hover:bg-brand-mint dark:hover:bg-slate-700'
-                }`}
-             >
+                  }`}
+              >
                 {isSaved ? <Check size={14} /> : <Save size={14} />}
-                {isSaved ? 'Saved' : 'Save Progress'}
-             </button>
-             <button onClick={() => setEditMode(false)} className="text-sm text-brand-primary dark:text-blue-300 hover:underline md:hidden">Preview</button>
-           </div>
+                {isSaved ? 'Saved' : 'Save'}
+              </button>
+              <button onClick={() => setEditMode(false)} className="text-sm text-brand-primary dark:text-blue-300 hover:underline md:hidden">Preview</button>
+            </div>
+          </div>
+
+          {/* Version Switcher */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-brand-mint/50 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resume Version</label>
+              <div className="flex gap-1">
+                <button onClick={handleCloneVersion} className="p-1 text-brand-primary hover:bg-white dark:hover:bg-slate-700 rounded transition-colors" title="Clone Version"><Plus size={14} /></button>
+                <button onClick={() => { setNewName(resume.name); setShowRenameModal(true); }} className="p-1 text-slate-500 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors" title="Rename"><ImageIcon size={14} /></button>
+                <button onClick={() => handleDeleteVersion(resume.id)} disabled={resumes.length <= 1} className="p-1 text-rose-500 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30" title="Delete"><Trash2 size={14} /></button>
+              </div>
+            </div>
+            <select
+              value={activeResumeId}
+              onChange={(e) => onSetActiveResume(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-brand-mint dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-brand-primary/20"
+            >
+              {resumes.map(r => (
+                <option key={r.id} value={r.id}>{r.name}{r.isDefault ? ' (Default)' : ''}</option>
+              ))}
+            </select>
+            {!resume.isDefault && (
+              <button onClick={() => handleSetDefault(resume.id)} className="mt-2 text-[10px] font-bold text-brand-primary hover:underline">Set as Default Version</button>
+            )}
+          </div>
         </div>
 
         {/* Upload CV Button */}
         <div className="mb-8">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".pdf,image/*" 
-            onChange={handleFileUpload} 
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".pdf,image/*"
+            onChange={handleFileUpload}
           />
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             className="w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-brand-secondary dark:border-slate-700 bg-blue-50 dark:bg-slate-800/50 rounded-xl hover:bg-blue-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -191,21 +266,21 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
           <section>
             <h3 className="text-sm font-semibold text-brand-primary dark:text-blue-300 uppercase tracking-wider mb-3">Personal Info</h3>
             <div className="space-y-3">
-              <input 
-                type="text" 
-                value={resume.fullName} 
+              <input
+                type="text"
+                value={resume.fullName}
                 onChange={(e) => updateField('fullName', e.target.value)}
                 className="w-full p-2 border border-brand-mint dark:border-slate-700 rounded text-sm focus:border-brand-primary outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 bg-white dark:bg-slate-800" placeholder="Full Name"
               />
-              <input 
-                type="text" 
-                value={resume.email} 
+              <input
+                type="text"
+                value={resume.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 className="w-full p-2 border border-brand-mint dark:border-slate-700 rounded text-sm focus:border-brand-primary outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 bg-white dark:bg-slate-800" placeholder="Email"
               />
-              <input 
-                type="text" 
-                value={resume.phone} 
+              <input
+                type="text"
+                value={resume.phone}
                 onChange={(e) => updateField('phone', e.target.value)}
                 className="w-full p-2 border border-brand-mint dark:border-slate-700 rounded text-sm focus:border-brand-primary outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 bg-white dark:bg-slate-800" placeholder="Phone"
               />
@@ -215,7 +290,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-brand-primary dark:text-blue-300 uppercase tracking-wider">Professional Summary</h3>
-              <button 
+              <button
                 onClick={handleGenerateSummary}
                 disabled={isGeneratingSummary}
                 className="flex items-center gap-1.5 text-xs font-medium text-brand-primary dark:text-blue-300 bg-blue-50 dark:bg-slate-800 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
@@ -225,8 +300,8 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
                 Generate
               </button>
             </div>
-            <textarea 
-              value={resume.summary} 
+            <textarea
+              value={resume.summary}
               onChange={(e) => updateField('summary', e.target.value)}
               className="w-full p-2 border border-brand-mint dark:border-slate-700 rounded text-sm h-32 focus:border-brand-primary outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 bg-white dark:bg-slate-800" placeholder="Summary"
             />
@@ -304,8 +379,8 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
           {/* Skills Section (Moved Down) */}
           <section>
             <h3 className="text-sm font-semibold text-brand-primary dark:text-blue-300 uppercase tracking-wider mb-3">Skills</h3>
-            <textarea 
-              value={resume.skills} 
+            <textarea
+              value={resume.skills}
               onChange={(e) => updateField('skills', e.target.value)}
               className="w-full p-2 border border-brand-mint dark:border-slate-700 rounded text-sm h-20 focus:border-brand-primary outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 bg-white dark:bg-slate-800" placeholder="Skills (comma separated)"
             />
@@ -339,13 +414,13 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
       {/* Preview Panel - FORCE WHITE for Paper Look even in Dark Mode */}
       <div className="flex-1 bg-brand-rose dark:bg-slate-950 p-8 overflow-y-auto print:bg-white print:p-0 print:overflow-visible custom-scrollbar">
         <div className="max-w-[210mm] mx-auto mb-4 flex justify-end no-print gap-2">
-           <button 
-             onClick={() => setEditMode(!editMode)} 
-             className="px-4 py-2 bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-lg text-brand-deep dark:text-slate-200 text-sm font-medium hover:bg-brand-mint/20 dark:hover:bg-slate-700 md:hidden"
-           >
-             {editMode ? 'Full Preview' : 'Edit'}
-           </button>
-           <button 
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-brand-mint dark:border-slate-700 rounded-lg text-brand-deep dark:text-slate-200 text-sm font-medium hover:bg-brand-mint/20 dark:hover:bg-slate-700 md:hidden"
+          >
+            {editMode ? 'Full Preview' : 'Edit'}
+          </button>
+          <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 bg-brand-deep dark:bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-brand-primary dark:hover:bg-slate-600 shadow-md"
           >
@@ -365,12 +440,12 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
                 <span>{resume.phone}</span>
               </div>
             </div>
-            
+
             {/* Avatar Display in Header */}
             {resume.avatar ? (
-              <img 
-                src={resume.avatar} 
-                alt="Profile" 
+              <img
+                src={resume.avatar}
+                alt="Profile"
                 className="w-24 h-24 object-cover rounded-lg border border-slate-200 ml-6"
               />
             ) : (
@@ -410,7 +485,7 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
               <div className="space-y-6">
                 {resume.education.map((edu) => (
                   <div key={edu.id}>
-                     <div className="flex justify-between items-baseline mb-1">
+                    <div className="flex justify-between items-baseline mb-1">
                       <h3 className="font-bold text-slate-800">{edu.title}</h3>
                       <span className="text-sm text-slate-500">{edu.date}</span>
                     </div>
@@ -441,10 +516,10 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
             )}
 
             <section>
-               <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-2 mb-4">Skills</h2>
-               <p className="text-sm text-slate-700 leading-relaxed">
-                 {resume.skills}
-               </p>
+              <h2 className="text-lg font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-2 mb-4">Skills</h2>
+              <p className="text-sm text-slate-700 leading-relaxed">
+                {resume.skills}
+              </p>
             </section>
 
             {/* Projects Section in Preview */}
@@ -470,6 +545,26 @@ const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ resume, setResume }) => {
           </div>
         </div>
       </div>
+
+      {/* Rename Modal */}
+      {showRenameModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-sm w-full p-8 border border-brand-mint dark:border-slate-800">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Rename Version</h3>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Frontend Specialist"
+              className="w-full p-4 border border-brand-mint dark:border-slate-700 rounded-2xl text-sm mb-6 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-brand-primary"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowRenameModal(false)} className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-bold">Cancel</button>
+              <button onClick={handleRename} className="flex-1 py-3 px-4 rounded-xl bg-brand-primary text-white font-bold">Rename</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
