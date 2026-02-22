@@ -12,11 +12,22 @@ import AuthScreen from './components/AuthScreen';
 import CalendarView from './components/CalendarView';
 import Insights from './components/Insights';
 import RecruiterCRM from './components/RecruiterCRM';
+import PortfolioEditor from './components/PortfolioEditor';
+import PublicProfile from './components/PublicProfile';
+import OfferComparisonDashboard from './components/OfferComparisonDashboard';
+import ApplicationScanner from './components/ApplicationScanner';
+import NetworkingTracker from './components/NetworkingTracker';
+import CareerTrajectoryMap from './components/CareerTrajectoryMap';
+import FollowUpAssistant from './components/FollowUpAssistant';
 import { ToastProvider } from './components/Toast';
 import { NotificationProvider, useNotifications } from './components/NotificationContext';
 import NotificationBell from './components/NotificationBell';
-import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings, Recruiter, OfferComparisonResult } from './types';
-import { Menu, Sun, Moon, Monitor } from 'lucide-react';
+import { Job, ViewState, Resume, Message, JobStatus, Theme, AppSettings, Recruiter, OfferComparisonResult, PortfolioSettings, NetworkingContact } from './types';
+import {
+  Menu, Sun, Moon, Monitor, Lock, Unlock,
+  Globe, Layout, CheckCircle2, Circle, Edit3, Image as ImageIcon, Plus, Trash2,
+  ExternalLink, Sparkles, User, Briefcase, Code, LayoutDashboard, FileText, UserCircle2, LogOut, CheckCircle, X, Calendar as CalendarIcon, BarChart3, Users, FileSearch, Milestone
+} from 'lucide-react';
 
 // --- MOCK DATA START ---
 
@@ -38,13 +49,6 @@ const MOCK_JOBS: Job[] = [
     dateApplied: getPastDate(2),
     description: 'We are looking for a Senior Frontend Engineer to lead our video streaming platform UI. You will work with React, WebGL, and WebSockets to deliver high-performance video experiences.',
     coverLetter: 'Dear Hiring Manager,\n\nI am thrilled to apply for the Senior Frontend Engineer position at Nebula Stream. As a passionate consumer of streaming content and a developer with 6 years of experience in high-performance web applications, I am excited about the challenge of optimizing video delivery UI...',
-    email: 'talent@nebulastream.io',
-    origin: 'application',
-    redFlags: {
-      pros: ["High Performance Tech Stack", "Hybrid Work"],
-      cons: ["Startups often have long hours"],
-      verdict: "Safe"
-    },
     interviewDate: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days from now
     recruiterId: 'rec-1'
   },
@@ -75,10 +79,7 @@ const MOCK_JOBS: Job[] = [
     interviewGuide: '**Company Insight:** EcoVision is heavily focused on green tech...\n\n**Key Questions:**\n1. How do you handle design handoffs?\n2. Experience with D3.js?',
     email: 'hello@ecovision.eu',
     origin: 'offer',
-    negotiation: {
-      script: "I'm very excited about the offer to join EcoVision. Based on my research of similar roles in the market and my specialized experience with React and D3.js, I was hoping we could discuss moving the base salary to €95k...",
-      strategy: "Focus on your unique hybrid design/dev skills which are rare."
-    },
+    negotiation: "I'm very excited about the offer to join EcoVision. Based on my research of similar roles in the market and my specialized experience with React and D3.js, I was hoping we could discuss moving the base salary to €95k...",
     recruiterId: 'rec-3'
   },
   {
@@ -161,10 +162,7 @@ const MOCK_JOBS: Job[] = [
     description: 'Developing IoT dashboards for solar panel array monitoring using React and Python.',
     email: 'hr@greenenergy.sys',
     origin: 'application',
-    negotiation: {
-      script: "I'm thrilled about the mission at GreenEnergy. Given the specific IoT experience I bring...",
-      strategy: "Emphasize the direct relevance of your IoT background."
-    },
+    negotiation: "I'm thrilled about the mission at GreenEnergy. Given the specific IoT experience I bring...",
     recruiterId: 'rec-3'
   },
   {
@@ -243,10 +241,7 @@ const MOCK_JOBS: Job[] = [
     description: 'Working on next-gen entertainment platforms.',
     email: 'recruiting@starlight.sys',
     origin: 'offer',
-    negotiation: {
-      script: "Thank you for the offer. Starlight is my top choice. However, I have another offer at $190k...",
-      strategy: "Leverage competing offer from AutoDrive AI (if valid)."
-    },
+    negotiation: "Thank you for the offer. Starlight is my top choice. However, I have another offer at $190k...",
     recruiterId: 'rec-6'
   },
   // --- ADDITIONAL MOCK JOBS ---
@@ -682,142 +677,104 @@ const MOCK_JOBS: Job[] = [
   }
 ];
 
+const MOCK_CONTACTS: NetworkingContact[] = [
+  {
+    id: '1',
+    name: 'Sarah Chen',
+    role: 'Senior Staff Engineer',
+    company: 'Google',
+    relationship: 'Mentor',
+    lastContact: '2024-02-15',
+    nextFollowUpDate: '2024-03-15',
+    notes: 'Discussed career growth and navigating large engineering organizations. Very helpful with architecture reviews.',
+    linkedinUrl: 'https://linkedin.com/in/sarahchen',
+    referralStatus: 'Not Applicable',
+    isPriority: true
+  },
+  {
+    id: '2',
+    name: 'Marcus Thorne',
+    role: 'Lead AI Researcher',
+    company: 'OpenAI',
+    relationship: 'Internal Referral',
+    lastContact: '2024-02-10',
+    notes: 'Former colleague. Expressed interest in referring me for the new LLM Platform team.',
+    linkedinUrl: 'https://linkedin.com/in/mt-openai',
+    referralStatus: 'Provided',
+    isPriority: true
+  },
+  {
+    id: '3',
+    name: 'Elena Rodriguez',
+    role: 'Head of Recruiting',
+    company: 'Stripe',
+    relationship: 'Recruiter',
+    lastContact: '2024-01-10',
+    nextFollowUpDate: '2024-02-25',
+    notes: 'Emailed about potential Senior Role in the payments core team. Need to send updated portfolio.',
+    linkedinUrl: 'https://linkedin.com/in/elena-stripe',
+    referralStatus: 'Not Applicable',
+    isPriority: false
+  }
+];
+
 const MOCK_RESUME: Resume = {
   id: 'default',
   name: 'Main Resume',
-  isDefault: true,
-  updatedAt: Date.now(),
   fullName: 'Kingsford Johnson',
   email: 'kingsford.johnson@example.dev',
   phone: '+1 (415) 555-0199',
-  summary: 'Innovative Senior Software Engineer with 7+ years of experience building scalable web applications. Expert in the React ecosystem, TypeScript, and cloud-native architecture. Proven track record of improving site performance by 40% and leading cross-functional teams of 10+ developers.',
-  skills: 'Languages: TypeScript, JavaScript (ES6+), Python, Go\nFrontend: React, Next.js, Tailwind CSS, Redux, WebGL\nBackend: Node.js, Express, GraphQL, PostgreSQL, Redis\nDevOps: Docker, Kubernetes, AWS (EC2, S3, Lambda), CI/CD (GitHub Actions)',
+  summary: 'Innovative Senior Software Engineer with 8+ years of experience building scalable web applications. Expert in React, TypeScript, and AI integrations.',
+  skills: 'React, TypeScript, Node.js, GraphQL, AWS, Python, Generative AI',
   experience: [
     {
-      id: 'exp-1',
-      title: 'Senior Frontend Engineer',
-      company: 'TechFlow Solutions',
-      date: '2021 - Present',
-      details: '• Architected the core design system used across 5 distinct products, reducing development time by 30%.\n• Led the migration of a legacy jQuery application to Next.js, improving Core Web Vitals scores from 45 to 95.\n• Mentored 4 junior developers, conducting code reviews and weekly pair programming sessions.'
+      id: 'exp1',
+      title: 'Senior Software Engineer',
+      company: 'TechFlow Systems',
+      date: '2020 - Present',
+      details: 'Led the development of a real-time collaboration platform, improving system performance by 40%.'
     },
     {
-      id: 'exp-2',
-      title: 'Software Engineer',
-      company: 'Innovate AI',
-      date: '2019 - 2021',
-      details: '• Developed and maintained the client-facing dashboard for NLP model training using React and D3.js.\n• Implemented real-time collaboration features using WebSockets and Redis.\n• Collaborated with data scientists to visualize complex datasets for enterprise clients.'
-    },
-    {
-      id: 'exp-3',
-      title: 'Junior Web Developer',
-      company: 'Creative Agency XYZ',
-      date: '2017 - 2019',
-      details: '• Built responsive marketing websites for over 20 clients using HTML, SCSS, and JavaScript.\n• Optimized images and assets, reducing average page load time by 1.5 seconds.\n• Worked directly with clients to gather requirements and iterate on designs.'
-    },
-    {
-      id: 'exp-4',
-      title: 'Freelance Developer',
-      company: 'Self-Employed',
-      date: '2016 - 2017',
-      details: '• Delivered custom WordPress themes and plugins for local businesses.\n• Integrated payment gateways (Stripe, PayPal) for e-commerce clients.'
-    },
-    {
-      id: 'exp-5',
-      title: 'Intern',
-      company: 'StartUp Hub',
-      date: 'Summer 2016',
-      details: '• Assisted in the development of an internal tool for tracking expenses.\n• Learned git workflows and agile development methodologies.'
+      id: 'exp2',
+      title: 'Software Developer',
+      company: 'InnovateCorp',
+      date: '2016 - 2020',
+      details: 'Built and maintained multiple high-traffic e-commerce websites using React and Next.js.'
     }
   ],
   education: [
     {
-      id: 'edu-1',
-      title: 'M.S. Computer Science',
-      company: 'Stanford University',
-      date: '2015 - 2017',
-      details: 'Focus on Human-Computer Interaction and Distributed Systems.'
-    },
-    {
-      id: 'edu-2',
-      title: 'B.S. Computer Science',
-      company: 'University of California, Berkeley',
-      date: '2011 - 2015',
-      details: 'Graduated Magna Cum Laude. President of the Web Development Club.'
-    },
-    {
-      id: 'edu-3',
-      title: 'Full Stack Certification',
-      company: 'FreeCodeCamp',
-      date: '2015',
-      details: 'Completed 300+ hours of coursework in MERN stack development.'
-    }
-  ],
-  certifications: [
-    {
-      id: 'cert-1',
-      title: 'AWS Certified Solutions Architect',
-      company: 'Amazon Web Services',
-      date: '2022',
-      details: 'Associate Level Certification.'
-    },
-    {
-      id: 'cert-2',
-      title: 'Certified Scrum Master',
-      company: 'Scrum Alliance',
-      date: '2020',
-      details: 'Certification for Agile project management.'
+      id: 'edu1',
+      title: 'B.S. in Computer Science',
+      company: 'University of Technology',
+      date: '2012 - 2016',
+      details: 'Graduated with Honors. Specialized in Distributed Systems.'
     }
   ],
   projects: [
     {
-      id: 'proj-1',
-      name: 'TS JobFlow',
-      technologies: 'React, TypeScript, Tailwind, Gemini API',
-      link: 'github.com/kingsford/jobflow',
-      description: 'A comprehensive job application dashboard featuring AI-powered cover letter generation and resume building. Uses local storage for persistence and Gemini for generative AI tasks.'
-    },
-    {
-      id: 'proj-2',
-      name: 'CryptoTracker',
-      technologies: 'React Native, Redux, CoinGecko API',
-      link: 'github.com/kingsford/crypto',
-      description: 'Mobile application for tracking cryptocurrency prices in real-time. Features price alerts, portfolio management, and historical charts.'
-    },
-    {
-      id: 'proj-3',
-      name: 'OpenSource UI Library',
-      technologies: 'Vue.js, Storybook, Jest',
-      link: 'npmjs.com/package/my-ui-lib',
-      description: 'Published a lightweight UI component library on NPM with over 1k weekly downloads. Includes accessible modal, dropdown, and datepicker components.'
-    },
-    {
-      id: 'proj-4',
-      name: 'SmartHome Hub',
-      technologies: 'Python, Raspberry Pi, MQTT',
-      link: 'github.com/kingsford/smarthome',
-      description: 'IoT project connecting various smart devices (lights, thermostat) to a centralized dashboard running on a Raspberry Pi.'
-    },
-    {
-      id: 'proj-5',
-      name: 'TaskMaster',
-      technologies: 'Electron, SQLite',
-      link: 'github.com/kingsford/taskmaster',
-      description: 'Desktop productivity application for task management. Features offline support and cross-platform synchronization.'
+      id: 'proj1',
+      name: 'AI Career Suite',
+      technologies: 'React, Gemini API, TypeScript',
+      link: 'github.com/kings/career-suite',
+      description: 'An all-in-one platform for job searching and career management powered by AI.'
     }
-  ]
+  ],
+  isDefault: true,
+  updatedAt: Date.now()
 };
 
 const MOCK_RECRUITERS: Recruiter[] = [
-  { id: 'rec-1', name: 'Sarah Chen', agency: 'TechTalent Partners', email: 'sarah@techtalent.io', linkedin: 'linkedin.com/in/sarahchen', phone: '+1 (415) 555-0101', notes: 'Very responsive, specializes in Frontend roles.', lastContactDate: getPastDate(2) },
-  { id: 'rec-2', name: 'Marcus Bloom', agency: 'Quantum Search', email: 'marcus@quantumsearch.com', linkedin: 'linkedin.com/in/mbloom', notes: 'Direct and focused on FinTech.', lastContactDate: getPastDate(5) },
-  { id: 'rec-3', name: 'Elena Rodriguez', agency: 'EcoRecruit', email: 'elena@ecorecruit.eu', phone: '+44 20 7946 0123', notes: 'Passionate about sustainability focus.', lastContactDate: getPastDate(15) },
-  { id: 'rec-4', name: 'David Smith', agency: 'CyberHire', email: 'david.smith@cyberhire.sec', linkedin: 'linkedin.com/in/dsmith-sec', notes: 'Expert in cybersecurity placements.', lastContactDate: getPastDate(20) },
-  { id: 'rec-5', name: 'Jessica Wu', agency: 'Global Logistics Talent', email: 'jwu@gl-talent.com', notes: 'Focuses on architectural and solutions roles.', lastContactDate: getPastDate(10) },
-  { id: 'rec-6', name: 'Michael O\'Connor', agency: 'AutoDrive Talent', email: 'm.oconnor@autodrive-talent.ai', phone: '+1 (412) 555-0789', notes: 'Specializes in ML and Computer Vision.', lastContactDate: getPastDate(3) },
-  { id: 'rec-7', name: 'Lisa Varma', agency: 'Retail Connect', email: 'lisa.v@retailconnect.com', notes: 'Great network in mobile/app development.', lastContactDate: getPastDate(4) },
-  { id: 'rec-8', name: 'Tom Hiddleston', agency: 'Summit Search', email: 'tom@summitsearch.co', linkedin: 'linkedin.com/in/thiddleston', notes: 'Handles DevOps and SRE roles.', lastContactDate: getPastDate(1) },
-  { id: 'rec-9', name: 'Rachel Zane', agency: 'EduSearch', email: 'rachel@edusearch.global', notes: 'Very helpful with React/Frontend specific roles.', lastContactDate: getPastDate(30) },
-  { id: 'rec-10', name: 'James Pearson', agency: 'Astra Biotech Recruitment', email: 'j.pearson@astrabio.com', notes: 'Focuses on bioinformatics and health-tech.', lastContactDate: getPastDate(1) }
+  { id: 'rec-1', name: 'Sarah Chen', company: 'TechTalent Partners', agency: 'TechTalent Partners', email: 'sarah@techtalent.io', linkedin: 'linkedin.com/in/sarahchen', notes: 'Very responsive, specializes in Frontend roles.', lastContact: getPastDate(2) },
+  { id: 'rec-2', name: 'Marcus Bloom', company: 'Quantum Search', agency: 'Quantum Search', email: 'marcus@quantumsearch.com', linkedin: 'linkedin.com/in/mbloom', notes: 'Direct and focused on FinTech.', lastContact: getPastDate(5) },
+  { id: 'rec-3', name: 'Elena Rodriguez', company: 'EcoRecruit', agency: 'EcoRecruit', email: 'elena@ecorecruit.eu', linkedin: 'linkedin.com/in/elena-rodriguez', notes: 'Passionate about sustainability focus.', lastContact: getPastDate(15) },
+  { id: 'rec-4', name: 'David Smith', company: 'CyberHire', agency: 'CyberHire', email: 'david.smith@cyberhire.sec', linkedin: 'linkedin.com/in/dsmith-sec', notes: 'Expert in cybersecurity placements.', lastContact: getPastDate(20) },
+  { id: 'rec-5', name: 'Jessica Wu', company: 'Global Logistics Talent', agency: 'Global Logistics Talent', email: 'jwu@gl-talent.com', linkedin: 'linkedin.com/in/jessica-wu', notes: 'Focuses on architectural and solutions roles.', lastContact: getPastDate(10) },
+  { id: 'rec-6', name: 'Michael O\'Connor', company: 'AutoDrive Talent', agency: 'AutoDrive Talent', email: 'm.oconnor@autodrive-talent.ai', linkedin: 'linkedin.com/in/moconnor', notes: 'Specializes in ML and Computer Vision.', lastContact: getPastDate(3) },
+  { id: 'rec-7', name: 'Lisa Varma', company: 'Retail Connect', agency: 'Retail Connect', email: 'lisa.v@retailconnect.com', linkedin: 'linkedin.com/in/lisavarma', notes: 'Great network in mobile/app development.', lastContact: getPastDate(4) },
+  { id: 'rec-8', name: 'Tom Hiddleston', company: 'Summit Search', agency: 'Summit Search', email: 'tom@summitsearch.co', linkedin: 'linkedin.com/in/thiddleston', notes: 'Handles DevOps and SRE roles.', lastContact: getPastDate(1) },
+  { id: 'rec-9', name: 'Rachel Zane', company: 'EduSearch', agency: 'EduSearch', email: 'rachel@edusearch.global', linkedin: 'linkedin.com/in/rachelzane', notes: 'Very helpful with React/Frontend specific roles.', lastContact: getPastDate(30) },
+  { id: 'rec-10', name: 'James Pearson', company: 'Astra Biotech Recruitment', agency: 'Astra Biotech Recruitment', email: 'j.pearson@astrabio.com', linkedin: 'linkedin.com/in/james-pearson', notes: 'Focuses on bioinformatics and health-tech.', lastContact: getPastDate(1) }
 ];
 
 const MOCK_MESSAGES: Message[] = [
@@ -851,7 +808,14 @@ const MOCK_MESSAGES: Message[] = [
 // --- MOCK DATA END ---
 
 const DEFAULT_SETTINGS: AppSettings = {
-  reminderTiming: 15 // Default to 15 minutes
+  userName: 'Alex Rivera',
+  targetRole: 'Senior Software Engineer',
+  minSalary: '180000',
+  locationPreference: 'Remote',
+  autoSync: true,
+  notifications: true,
+  theme: 'system',
+  reminderTiming: 15
 };
 
 const ThemeToggle = ({ theme, setTheme, onNavigate }: { theme: Theme, setTheme: (t: Theme) => void, onNavigate: (v: ViewState) => void }) => {
@@ -899,6 +863,29 @@ const StatusNotifier: React.FC<{ onReady: (fn: (type: string, title: string, mes
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [activeRecruiterId, setActiveRecruiterId] = useState<string | null>(null);
+  const [portfolioSettings, setPortfolioSettings] = useState<PortfolioSettings>({
+    name: 'Alex Rivera',
+    tagline: 'Senior Full Stack Product Engineer',
+    bio: 'Passionate about building intuitive user experiences and high-performance applications. 6+ years of experience in React, Node.js, and Cloud Architecture.',
+    featuredJobs: ['job-1', 'job-5', 'job-10'],
+    projects: [
+      {
+        id: 'p-1',
+        title: 'Nebula Streaming UI',
+        description: 'Led the UI overhaul for the flagship video streaming platform, improving load times by 40%.',
+        isFeatured: true
+      },
+      {
+        id: 'p-2',
+        title: 'Open Source UI Library',
+        description: 'A collection of accessible, glassmorphic React components used by over 5k developers.',
+        isFeatured: true
+      }
+    ],
+    theme: 'modern',
+    isPublic: true
+  });
   const [statusFilter, setStatusFilter] = useState<JobStatus | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
@@ -997,6 +984,14 @@ const App: React.FC = () => {
     } catch { return MOCK_RECRUITERS; }
   });
 
+  // Networking Contacts State
+  const [contacts, setContacts] = useState<NetworkingContact[]>(() => {
+    try {
+      const saved = localStorage.getItem('jobflow_contacts');
+      return saved ? JSON.parse(saved) : MOCK_CONTACTS;
+    } catch { return MOCK_CONTACTS; }
+  });
+
   // Resumes State (Migration from single to multi)
   const [resumes, setResumes] = useState<Resume[]>(() => {
     try {
@@ -1038,10 +1033,17 @@ const App: React.FC = () => {
 
   const [unreadNtim, setUnreadNtim] = useState(false);
 
+  // Follow-up Assistant State
+  const [showFollowUp, setShowFollowUp] = useState(false);
+
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('jobflow_jobs', JSON.stringify(jobs));
   }, [jobs]);
+
+  useEffect(() => {
+    localStorage.setItem('jobflow_contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
   useEffect(() => {
     localStorage.setItem('jobflow_resumes', JSON.stringify(resumes));
@@ -1131,11 +1133,11 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
-        return <Dashboard jobs={jobs} onViewChange={setCurrentView} userName={userName} onCardClick={handleDashboardCardClick} />;
+        return <Dashboard jobs={jobs} onViewChange={setCurrentView} userName={userName} onCardClick={handleDashboardCardClick} onOpenFollowUp={() => setShowFollowUp(true)} />;
       case ViewState.JOBS:
         return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="applications" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} recruiters={recruiters} />;
       case ViewState.OFFERS:
-        return <JobTracker jobs={jobs} setJobs={setJobs} viewMode="offers" onStatusChange={handleJobStatusChange} resume={resume} setResume={setResume} settings={settings} statusFilter={statusFilter} onClearStatusFilter={() => setStatusFilter(null)} initialJobId={activeJobId} onJobSelected={setActiveJobId} recruiters={recruiters} />;
+        return <OfferComparisonDashboard jobs={jobs} />;
       case ViewState.RESUME:
         return (
           <ResumeBuilder
@@ -1157,6 +1159,29 @@ const App: React.FC = () => {
         return <CalendarView jobs={jobs} onNavigateToJob={handleNavigateToJob} />;
       case ViewState.INSIGHTS:
         return <Insights jobs={jobs} />;
+      case ViewState.SCAN:
+        return <ApplicationScanner onAddJob={(newJob) => setJobs(prev => [newJob, ...prev])} onViewChange={setCurrentView} />;
+      case ViewState.TRAJECTORY:
+        return <CareerTrajectoryMap jobs={jobs} />;
+      case ViewState.NETWORKING:
+        return <NetworkingTracker contacts={contacts} setContacts={setContacts} />;
+      case ViewState.PORTFOLIO:
+        return (
+          <div className="flex-1 overflow-hidden relative">
+            <PortfolioEditor
+              jobs={jobs}
+              portfolioSettings={portfolioSettings}
+              setPortfolioSettings={setPortfolioSettings}
+            />
+            <button
+              className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium shadow-md hover:shadow-lg transition-all"
+              onClick={() => setPortfolioSettings(prev => ({ ...prev, isPublic: !prev.isPublic }))}
+            >
+              {portfolioSettings.isPublic ? <Unlock size={16} /> : <Lock size={16} />}
+              {portfolioSettings.isPublic ? 'Public' : 'Private'}
+            </button>
+          </div>
+        );
       default:
         return <Dashboard jobs={jobs} onViewChange={setCurrentView} onCardClick={handleDashboardCardClick} />;
     }

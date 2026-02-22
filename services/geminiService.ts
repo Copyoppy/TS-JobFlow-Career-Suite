@@ -1,9 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { Job } from "../types";
+import { Job, Resume } from "../types";
 
 // Standard initialization for @google/genai
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-const MODEL_NAME = "gemini-1.5-flash";
+const MODEL_NAME = "gemini-2.0-flash-exp";
 
 /**
  * Helper to extract and parse JSON from AI responses (handles markdown wrapping)
@@ -12,11 +12,33 @@ const parseAIJSON = (text: string | undefined): any => {
   if (!text) return null;
   try {
     const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned);
+    // Sometimes the AI adds text before or after the JSON, let's try to extract just the { } part
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
   } catch (e) {
     console.error("Failed to parse AI JSON:", e);
     return null;
   }
+};
+
+/**
+ * Converts a File object to the format required for Google Generative AI Modal
+ */
+export const fileToInlineData = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = (reader.result as string).split(',')[1];
+      resolve({
+        inlineData: {
+          data: base64Data,
+          mimeType: file.type,
+        },
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };
 
 // --- Services ---
@@ -128,6 +150,91 @@ RULES:
   });
 };
 
+export const createInterviewSession = (job: Job, history: any[] = []) => {
+  const systemInstruction = `You are now an interviewer for ${job.company}, interviewing a candidate for the ${job.role} position. 
+  
+  JOB DESCRIPTION:
+  ${job.description}
+  
+  YOUR GOAL:
+  - Conduct a professional, rigorous, but fair interview.
+  - Ask one question at a time.
+  - Listen to the candidate's response (which will be a transcript of their voice) and ask a relevant follow-up or move to a new topic.
+  - Be realistic for the role level.
+  - If the user asks for help, briefly step out of character to coach them, then step back in.
+  
+  FORMAT:
+  - Start by introducing yourself and welcoming the candidate.
+  - Ask the first question immediately in your first response.`;
+
+  return ai.chats.create({
+    model: MODEL_NAME,
+    history: history,
+    config: { systemInstruction }
+  });
+};
+
+export const extractJobDetails = async (text: string, file?: File): Promise<Partial<Job>> => {
+  const prompt = `Extract the following job details from this input (which could be a job posting, confirmation email, resume snippet, or an image/PDF of a job post).
+  
+  Return ONLY a valid JSON object with these fields:
+  {
+    "company": "string",
+    "role": "string",
+    "location": "string",
+    "salary": "string",
+    "description": "string",
+    "email": "string"
+  }
+  If a field is not found, use an empty string. Ensure the JSON is compact and has no extra text.`;
+
+  try {
+    const parts: any[] = [{ text: prompt }];
+    if (file) {
+      const fileData = await fileToInlineData(file);
+      parts.push(fileData);
+    }
+    if (text) {
+      parts.push({ text: `Input Text: "${text}"` });
+    }
+
+    const result = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: [{ role: 'user', parts }]
+    });
+
+    return parseAIJSON(result.text) || {};
+  } catch (error) {
+    console.error("Extraction failed:", error);
+    return {};
+  }
+};
+
+export const generateFollowUp = async (job: Job, resume?: Resume): Promise<string> => {
+  const prompt = `Generate a professional, polite, and effective follow-up email/message for this job:
+  Job: ${job.role} at ${job.company}
+  Status: ${job.status}
+  Date Applied/Interative: ${job.dateApplied || job.interviewDate}
+  
+  CONTEXT:
+  - If it's after an application, keep it brief and show interest.
+  - If it's after an interview, express gratitude and mention something specific if possible.
+  - The tone should be enthusiastic but professional.
+  
+  Return ONLY the message text without subject lines or extra text.`;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+    });
+    return result.text || "Failed to generate message.";
+  } catch (error) {
+    console.error("Follow-up generation failed:", error);
+    return "Failed to generate message.";
+  }
+};
+
 export const analyzeResumeMatch = async (resumeText: string, jobDescription: string): Promise<any> => {
   try {
     const prompt = `Match Score (0-100) for Resume vs JD. JSON: {matchScore, missingKeywords:[], explanation}. \n\nJD: ${jobDescription}\n\nResume: ${resumeText}`;
@@ -206,11 +313,32 @@ export const generateNegotiationAdvice = async (
 
 export const analyzeMockInterview = async (
   question: string,
-  userSpokenText: string
+  userSpokenText: string,
+  videoFile?: File
 ): Promise<any> => {
   try {
-    const prompt = `Interview feedback for Q: ${question}, A: ${userSpokenText}. JSON: {feedback, improvedAnswer}`;
-    const res = await ai.models.generateContent({ model: MODEL_NAME, contents: [{ role: 'user', parts: [{ text: prompt }] }] });
+    const prompt = `Provide deep interview feedback for the following exchange:
+    Interviewer Question: "${question}"
+    Candidate Answer: "${userSpokenText}"
+
+    ${videoFile ? "I have also provided a video of the candidate's performance. Please analyze their non-verbal communication (eye contact, posture, confidence, facial expressions) in addition to their verbal response." : ""}
+
+    Return JSON: {
+      "feedback": "string (comprehensive feedback including verbal and non-verbal if applicable)",
+      "improvedAnswer": "string (a better version of the candidate's answer)",
+      "nonVerbalCues": "string (optional: specific observations about video performance)"
+    }`;
+
+    const parts: any[] = [{ text: prompt }];
+    if (videoFile) {
+      const fileData = await fileToInlineData(videoFile);
+      parts.push(fileData);
+    }
+
+    const res = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: [{ role: 'user', parts }]
+    });
     return parseAIJSON(res.text);
   } catch (error) {
     console.error("Error analyzing interview:", error);

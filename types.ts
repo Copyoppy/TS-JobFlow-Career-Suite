@@ -1,82 +1,3 @@
-
-export enum JobStatus {
-  APPLIED = 'Applied',
-  INTERVIEW = 'Interview',
-  OFFER = 'Offer',
-  REJECTED = 'Rejected',
-  DRAFT = 'Draft',
-  ACCEPTED = 'Accepted'
-}
-
-export type Theme = 'light' | 'dark' | 'system';
-
-export interface AppSettings {
-  reminderTiming: number; // Minutes before interview to notify
-}
-
-export interface AnalysisResult {
-  matchScore: number;
-  missingKeywords: string[];
-  explanation: string;
-}
-
-export interface RedFlagAnalysis {
-  pros: string[];
-  cons: string[];
-  verdict: string;
-}
-
-export interface NetworkingDrafts {
-  linkedin: string;
-  email: string;
-  followup: string;
-}
-
-export interface NegotiationAdvice {
-  script: string;
-  strategy: string;
-}
-
-export interface InterviewFeedback {
-  id: string;
-  question: string;
-  userAudioTranscript: string;
-  feedback: string;
-  improvedAnswer: string;
-  timestamp: number;
-}
-
-export interface TailoredResume {
-  summary: string;
-  skills: string;
-}
-
-// Feature 1: Learning Roadmap Types
-export interface LearningResource {
-  title: string;
-  searchQuery: string;
-}
-
-export interface LearningDay {
-  day: string;
-  theme: string;
-  tasks: string[];
-  resources: LearningResource[];
-}
-
-// Feature 5: Offer Comparison Types
-export interface OfferComparisonPoint {
-  criteria: string;
-  job1Value: string;
-  job2Value: string;
-  winner: 'job1' | 'job2' | 'tie';
-}
-
-export interface OfferComparisonResult {
-  points: OfferComparisonPoint[];
-  verdict: string;
-}
-
 export interface Job {
   id: string;
   company: string;
@@ -86,38 +7,58 @@ export interface Job {
   status: JobStatus;
   dateApplied: string;
   description: string;
+  email?: string;
+  notes?: string;
+  followUpDate?: string;
+  interviewDate?: string;
+  interviewPractice?: InterviewFeedback;
+  origin?: 'application' | 'offer' | 'referral' | 'outreach';
+  priority?: 1 | 2 | 3;
   coverLetter?: string;
   interviewGuide?: string;
-  email: string;
-  origin?: 'application' | 'offer';
-
-  // New AI Feature Fields
-  atsAnalysis?: AnalysisResult;
-  learningRoadmap?: LearningDay[];
-  redFlags?: RedFlagAnalysis;
-  networking?: NetworkingDrafts;
-  negotiation?: NegotiationAdvice;
-  interviewPractice?: InterviewFeedback[];
-
-  // Reminder Features
-  followUpDate?: string;
-  interviewDate?: string; // ISO DateTime string
-
-  // User-added metadata
-  applicationUrl?: string;
-  notes?: string;
-  recruiterId?: string; // Link to Recruiter CRM
+  recruiterId?: string;
+  negotiation?: string;
 }
 
-export interface Recruiter {
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface Message {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+}
+
+export enum JobStatus {
+  APPLIED = 'Applied',
+  INTERVIEW = 'Interview',
+  OFFER = 'Offer',
+  REJECTED = 'Rejected',
+  ACCEPTED = 'Accepted'
+}
+
+export interface InterviewFeedback {
+  score: number;
+  strengths: string[];
+  improvements: string[];
+  aiAdvice: string;
+  recordedDate: string;
+}
+
+export interface Resume {
   id: string;
   name: string;
-  agency?: string;
-  email?: string;
-  linkedin?: string;
-  phone?: string;
-  notes?: string;
-  lastContactDate?: string;
+  avatar?: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  summary: string;
+  skills: string;
+  experience: ResumeSection[];
+  education: ResumeSection[];
+  certifications?: ResumeSection[];
+  projects: ResumeProject[];
+  isDefault: boolean;
+  updatedAt: number;
 }
 
 export interface ResumeSection {
@@ -128,7 +69,7 @@ export interface ResumeSection {
   details: string;
 }
 
-export interface Project {
+export interface ResumeProject {
   id: string;
   name: string;
   technologies: string;
@@ -136,40 +77,93 @@ export interface Project {
   description: string;
 }
 
-export interface Resume {
+export interface Recruiter {
   id: string;
-  name: string; // "Product Manager Resume", "Frontend Resume", etc.
-  isDefault: boolean;
-  fullName: string;
+  name: string;
+  company: string;
   email: string;
-  phone: string;
-  summary: string;
-  skills: string;
-  experience: ResumeSection[];
-  education: ResumeSection[];
-  projects: Project[];
-  certifications: ResumeSection[];
-  avatar?: string;
-  updatedAt: number;
+  linkedin: string;
+  lastContact: string;
+  notes: string;
+  agency?: string;
+  associatedJobId?: string;
 }
 
-export interface Message {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
+export interface AppSettings {
+  userName: string;
+  targetRole: string;
+  minSalary: string;
+  locationPreference: string;
+  autoSync: boolean;
+  notifications: boolean;
+  theme: Theme;
+  reminderTiming?: number;
 }
 
-export type NotificationType = 'interview_reminder' | 'followup_due' | 'followup_overdue' | 'status_change' | 'info';
-
-export interface AppNotification {
-  id: string;
-  type: NotificationType;
+export interface CareerInsight {
   title: string;
-  message: string;
-  timestamp: number;
-  read: boolean;
-  jobId?: string;
-  actionView?: ViewState;
+  description: string;
+  type: 'market' | 'skill' | 'action';
+  impact: 'high' | 'medium' | 'low';
+}
+
+export interface LearningResource {
+  id: string;
+  title: string;
+  provider: string;
+  url: string;
+  tags: string[];
+}
+
+export interface MarketTrend {
+  skill: string;
+  demand: number;
+  growth: number;
+  resources: LearningResource[];
+}
+
+export interface OfferComparisonResult {
+  verdict: string;
+  points: {
+    criteria: string;
+    job1Value: string;
+    job2Value: string;
+    winner: 'job1' | 'job2' | 'tie';
+  }[];
+}
+
+export interface PortfolioProject {
+  id: string;
+  title: string;
+  description: string;
+  skills?: string[];
+  url?: string;
+  imageUrl?: string;
+  isFeatured?: boolean;
+}
+
+export interface PortfolioSettings {
+  name: string;
+  tagline: string;
+  bio: string;
+  featuredJobs: string[];
+  projects: PortfolioProject[];
+  theme: 'minimal' | 'modern' | 'glass';
+  isPublic: boolean;
+}
+
+export interface NetworkingContact {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  relationship: 'Mentor' | 'Peer' | 'Recruiter' | 'Internal Referral' | 'Other';
+  lastContact: string;
+  nextFollowUpDate?: string;
+  notes: string;
+  linkedinUrl?: string;
+  referralStatus: 'Requested' | 'Provided' | 'Not Applicable';
+  isPriority: boolean;
 }
 
 export enum ViewState {
@@ -182,5 +176,9 @@ export enum ViewState {
   CRM = 'CRM',
   CALENDAR = 'CALENDAR',
   INSIGHTS = 'INSIGHTS',
+  PORTFOLIO = 'PORTFOLIO',
+  NETWORKING = 'NETWORKING',
+  SCAN = 'SCAN',
+  TRAJECTORY = 'TRAJECTORY',
   SETTINGS = 'SETTINGS'
 }

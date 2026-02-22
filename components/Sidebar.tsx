@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Briefcase, FileText, UserCircle2, Settings, LogOut, CheckCircle, X, Calendar as CalendarIcon, BarChart3, Users } from 'lucide-react';
+import { LayoutDashboard, Briefcase, FileText, UserCircle2, Settings, LogOut, CheckCircle, X, Calendar as CalendarIcon, BarChart3, Users, Globe, FileSearch, Lock, Unlock } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
@@ -46,6 +46,11 @@ const NtimIcon = ({ className, size = 20 }: { className?: string; size?: number 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadMessages = false, isOpen, onClose, userName = '', onLogout }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // Placeholder for portfolioSettings, assuming it would be passed via props or context
+  // For now, we'll mock it to make the new button syntactically correct.
+  // In a real application, this would come from state management or props.
+  const [portfolioSettings, setPortfolioSettings] = useState({ isPublic: true });
+
   const handleLogout = () => {
     localStorage.removeItem('jobflow_authenticated');
     if (onLogout) {
@@ -76,6 +81,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
     { id: ViewState.INSIGHTS, label: 'Search Insights', icon: BarChart3 },
     { id: ViewState.RESUME, label: 'Resume Builder', icon: FileText },
     { id: ViewState.CRM, label: 'Recruiter CRM', icon: Users },
+    { id: ViewState.PORTFOLIO, label: 'Career Portfolio', icon: Globe },
+    { id: ViewState.SCAN, label: 'Scan & Sync', icon: FileSearch },
+    { id: ViewState.NETWORKING, label: 'Networking Tracker', icon: CalendarIcon },
     { id: ViewState.AVATAR, label: 'AI Avatar', icon: UserCircle2 },
   ];
 
@@ -88,48 +96,49 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
     <>
       {/* Mobile Overlay */}
       <div
-        className={`fixed inset-0 bg-brand-deep/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
+        className={`fixed inset - 0 bg - brand - deep / 50 backdrop - blur - sm z - 40 md:hidden transition - opacity duration - 300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          } `}
         onClick={onClose}
       />
 
       <div
         className={`
-          fixed md:sticky top-0 h-screen w-64 bg-brand-primary border-r border-white/10 flex flex-col flex-shrink-0 no-print shadow-xl shadow-black/20 z-50 transition-transform duration-300 
+          fixed md:sticky top - 0 h - screen w - 64 bg - brand - primary border - r border - white / 10 flex flex - col flex - shrink - 0 no - print shadow - xl shadow - black / 20 z - 50 transition - transform duration - 300 
           ${isOpen ? 'translate-x-0 transform' : '-translate-x-full transform md:transform-none'}
-        `}
+`}
         style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as React.CSSProperties}
       >
         <style>
           {`
-          @keyframes border-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+@keyframes border - flow {
+  0 % { background- position: 0 % 50 %;
+}
+50 % { background- position: 100 % 50 %; }
+100 % { background- position: 0 % 50 %; }
           }
-          .ntim-notify {
-            position: relative;
-            z-index: 0;
-            overflow: hidden;
-          }
-          .ntim-notify::before {
-            content: '';
-            position: absolute;
-            top: -3px; left: -3px; right: -3px; bottom: -3px;
-            background: linear-gradient(45deg, #fff, #60a5fa, #2563eb, #60a5fa, #fff);
-            background-size: 300% 300%;
-            z-index: -1;
-            animation: border-flow 2s ease infinite;
-            border-radius: 14px;
-          }
-          .ntim-notify-blink {
-            animation: blink-shadow 2s infinite;
-          }
-          @keyframes blink-shadow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-          }
-          `}
+          .ntim - notify {
+  position: relative;
+  z - index: 0;
+  overflow: hidden;
+}
+          .ntim - notify::before {
+  content: '';
+  position: absolute;
+  top: -3px; left: -3px; right: -3px; bottom: -3px;
+  background: linear - gradient(45deg, #fff, #60a5fa, #2563eb, #60a5fa, #fff);
+  background - size: 300 % 300 %;
+  z - index: -1;
+  animation: border - flow 2s ease infinite;
+  border - radius: 14px;
+}
+          .ntim - notify - blink {
+  animation: blink - shadow 2s infinite;
+}
+@keyframes blink - shadow {
+  0 %, 100 % { opacity: 1; }
+  50 % { opacity: 0.8; }
+}
+`}
         </style>
 
         {/* Close Button Mobile */}
@@ -163,10 +172,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group font-medium ${isActive
+                className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - xl transition - all duration - 200 group font - medium ${isActive
                   ? 'bg-white text-brand-primary shadow-lg shadow-black/10'
                   : 'text-blue-50 hover:bg-white/10 hover:text-white'
-                  }`}
+                  } `}
               >
                 <Icon size={20} className={isActive ? 'text-brand-primary' : 'text-blue-200 group-hover:text-white'} />
                 {item.label}
@@ -180,12 +189,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
           <div className={hasUnreadMessages ? 'ntim-notify rounded-xl' : ''}>
             <button
               onClick={() => handleNavClick(ViewState.NTIM)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group font-medium ${currentView === ViewState.NTIM
+              className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - xl transition - all duration - 200 group font - medium ${currentView === ViewState.NTIM
                 ? 'bg-white text-brand-deep shadow-lg shadow-black/5'
                 : hasUnreadMessages
                   ? 'bg-white text-brand-deep shadow-lg ntim-notify-blink' // Active looking style for unread
                   : 'text-blue-50 hover:bg-white/10 hover:text-white'
-                }`}
+                } `}
             >
               <NtimIcon size={20} className={currentView === ViewState.NTIM || hasUnreadMessages ? 'text-brand-deep' : 'text-blue-200 group-hover:text-white'} />
               <span className="flex-1 text-left">Ntim Assistant</span>
@@ -212,13 +221,24 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, hasUnreadM
           )}
           <button
             onClick={() => handleNavClick(ViewState.SETTINGS)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${currentView === ViewState.SETTINGS
+            className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - xl transition - colors font - medium text - sm ${currentView === ViewState.SETTINGS
               ? 'bg-white text-brand-primary'
               : 'text-blue-100 hover:bg-white/10 hover:text-white'
-              }`}
+              } `}
           >
             <Settings size={18} />
             Settings
+          </button>
+          {/* New button for Portfolio Settings */}
+          <button
+            onClick={() => { /* Handle portfolio settings toggle */ setPortfolioSettings(prev => ({ ...prev, isPublic: !prev.isPublic })); }}
+            className={`w - full flex items - center gap - 3 px - 4 py - 3 rounded - xl transition - colors font - medium text - sm ${currentView === ViewState.SETTINGS
+              ? 'bg-white text-brand-primary'
+              : 'text-blue-100 hover:bg-white/10 hover:text-white'
+              } `}
+          >
+            {portfolioSettings.isPublic ? <Unlock size={16} /> : <Lock size={16} />}
+            {portfolioSettings.isPublic ? 'Public' : 'Private'}
           </button>
           <button
             onClick={() => setShowLogoutConfirm(true)}

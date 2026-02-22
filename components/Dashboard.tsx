@@ -12,6 +12,7 @@ interface DashboardProps {
   onViewChange: (view: ViewState) => void;
   userName?: string;
   onCardClick?: (status: JobStatus) => void;
+  onOpenFollowUp?: () => void;
 }
 
 const StatCard = ({ title, value, icon: Icon, color, bg, darkBg, onClick }: any) => (
@@ -56,7 +57,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName, onCardClick }) => {
+const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName, onCardClick, onOpenFollowUp }) => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
   const [visibleSeries, setVisibleSeries] = useState({ apps: true, offers: true });
 
@@ -388,6 +389,13 @@ const Dashboard: React.FC<DashboardProps> = ({ jobs, onViewChange, userName, onC
               >
                 <MessageSquare size={16} />
                 Start Chatting
+              </button>
+              <button
+                onClick={onOpenFollowUp}
+                className="mt-3 bg-white text-brand-deep px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-rose transition shadow-sm w-full flex items-center justify-center gap-2"
+              >
+                <Sparkles size={16} />
+                Follow-up Assistant
               </button>
             </div>
             {/* Decorative elements */}

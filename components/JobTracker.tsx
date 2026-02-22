@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Job, JobStatus, Resume, TailoredResume, OfferComparisonResult, AppSettings, Recruiter } from '../types';
+import { Job, JobStatus, Resume, TailoredResume, OfferComparisonResult, AppSettings, Recruiter, InterviewFeedback } from '../types';
 import {
   generateCoverLetter,
   generateInterviewGuide,
@@ -17,12 +17,13 @@ import {
   Trash2, CheckCircle2, FileText, BookOpen, LayoutGrid, List, MoreHorizontal, Target,
   ShieldAlert, XCircle, Send, Mic, MicOff, PlayCircle, BarChart3, Users, DollarSignIcon, Copy, Check, ArrowRight,
   RefreshCw, Trophy, Scale, ExternalLink, GraduationCap, Bell, CalendarClock, CalendarPlus, BellRing, AlertCircle, Clock,
-  Link2
+  Link2, MessageSquare
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ATSGauge, parseBold, FormattedDisplay } from './JobTrackerHelpers';
 import AddJobModal from './AddJobModal';
 import CompareOffersModal from './CompareOffersModal';
+import MockInterviewMode from './MockInterviewMode';
 import { useToast } from './Toast';
 
 interface JobTrackerProps {
@@ -74,6 +75,7 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
   const [draggedJobId, setDraggedJobId] = useState<string | null>(null);
   const [activeMenuJobId, setActiveMenuJobId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMockInterviewActive, setIsMockInterviewActive] = useState(false);
 
   const isOffersMode = viewMode === 'offers';
 
@@ -214,6 +216,14 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
     if ([JobStatus.APPLIED, JobStatus.OFFER, JobStatus.ACCEPTED].includes(newStatus)) {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
     }
+  };
+
+  const handleSaveInterviewFeedback = (feedback: InterviewFeedback) => {
+    if (!selectedJob) return;
+    updateSelectedJob(j => ({
+      ...j,
+      interviewPractice: [feedback, ...(j.interviewPractice || [])]
+    }));
   };
 
   const updateSelectedJob = (updater: (j: Job) => Job) => {
@@ -1116,55 +1126,87 @@ const JobTracker: React.FC<JobTrackerProps> = ({ jobs, setJobs, viewMode = 'appl
               {/* --- TAB: PRACTICE (Mock Interview) --- */}
               {activeTab === 'practice' && (
                 <div className="space-y-6">
-                  {(selectedJob.status === JobStatus.OFFER || selectedJob.status === JobStatus.ACCEPTED) ? (
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-6 shadow-sm text-center animate-in fade-in zoom-in-95 duration-300">
-                      <div className="w-16 h-16 bg-white dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200 dark:border-emerald-800 shadow-sm">
-                        <Mic size={32} className="text-emerald-500" />
-                      </div>
-                      <h3 className="font-bold text-emerald-800 dark:text-emerald-200 text-lg mb-2">Interview Phase Complete!</h3>
-                      <p className="text-emerald-700 dark:text-emerald-300 text-sm max-w-xs mx-auto">
-                        You've successfully passed the interviews. No need to practice for this role anymore. Great job!
-                      </p>
+                  {isMockInterviewActive && selectedJob ? (
+                    <div className="h-[600px] animate-in zoom-in-95 duration-300">
+                      <MockInterviewMode
+                        job={selectedJob}
+                        onClose={() => setIsMockInterviewActive(false)}
+                        onSaveFeedback={handleSaveInterviewFeedback}
+                      />
                     </div>
                   ) : (
                     <>
-                      <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-brand-mint dark:border-slate-800 shadow-sm">
-                        <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><Mic size={18} className="text-brand-primary" /> Audio Simulator</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Practice answering common questions. The AI will analyze your speech and provide feedback.</p>
-
-                        <div className="space-y-3">
-                          {["Tell me about yourself.", "Why do you want this role?", "What is your biggest weakness?"].map((q) => (
-                            <div key={q} className="border border-slate-100 dark:border-slate-700 rounded-lg p-3 hover:border-brand-mint dark:hover:border-slate-600 transition-colors">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{q}</span>
-                                <button
-                                  onClick={() => isRecording ? handleStopRecording() : handleStartRecording(q)}
-                                  className={`p-2 rounded-full transition-all ${isRecording ? 'bg-rose-500 text-white animate-pulse' : 'bg-brand-rose dark:bg-slate-700 text-brand-primary hover:bg-brand-primary hover:text-white'}`}
-                                >
-                                  {isRecording ? <MicOff size={16} /> : <PlayCircle size={16} />}
-                                </button>
-                              </div>
-                              {loadingFeature === 'interview-' + q && <div className="text-xs text-brand-primary flex gap-2 items-center"><Loader2 size={12} className="animate-spin" /> Analyzing your answer...</div>}
-                            </div>
-                          ))}
+                      {(selectedJob.status === JobStatus.OFFER || selectedJob.status === JobStatus.ACCEPTED) ? (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-6 shadow-sm text-center animate-in fade-in zoom-in-95 duration-300">
+                          <div className="w-16 h-16 bg-white dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200 dark:border-emerald-800 shadow-sm">
+                            <Mic size={32} className="text-emerald-500" />
+                          </div>
+                          <h3 className="font-bold text-emerald-800 dark:text-emerald-200 text-lg mb-2">Interview Phase Complete!</h3>
+                          <p className="text-emerald-700 dark:text-emerald-300 text-sm max-w-xs mx-auto">
+                            You've successfully passed the interviews. No need to practice for this role anymore. Great job!
+                          </p>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-brand-mint dark:border-slate-800 shadow-sm text-center">
+                            <div className="w-20 h-20 bg-brand-rose dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-brand-mint dark:border-slate-700">
+                              <PlayCircle size={40} className="text-brand-primary" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI Mock Interview</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                              Practice your interviewing skills with Ntim. He will act as the hiring manager for {selectedJob.company} and ask questions tailored to the {selectedJob.role} role.
+                            </p>
+
+                            <button
+                              onClick={() => setIsMockInterviewActive(true)}
+                              className="px-8 py-4 bg-brand-primary text-white rounded-2xl font-black uppercase tracking-widest hover:bg-brand-deep shadow-xl shadow-brand-primary/20 transition-all flex items-center gap-3 mx-auto"
+                            >
+                              <Mic size={20} />
+                              Start Interview Mode
+                            </button>
+                          </div>
+                        </>
+                      )}
 
                       {/* Feedback List */}
                       {selectedJob.interviewPractice && selectedJob.interviewPractice.length > 0 && (
                         <div className="space-y-4">
-                          <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase">Recent Feedback</h4>
+                          <div className="flex justify-between items-center">
+                            <h4 className="text-sm font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Previous Session Feedback</h4>
+                            <span className="text-[10px] font-black bg-brand-mint dark:bg-slate-800 text-brand-deep dark:text-blue-300 px-2 py-0.5 rounded uppercase tracking-widest">
+                              {selectedJob.interviewPractice.length} sessions
+                            </span>
+                          </div>
                           {selectedJob.interviewPractice.map((entry) => (
-                            <div key={entry.id} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                              <div className="text-xs font-bold text-brand-primary mb-1">{entry.question}</div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic">"{entry.userAudioTranscript}"</div>
-                              <div className="bg-white dark:bg-slate-900 p-3 rounded border border-brand-mint dark:border-slate-700 mb-2">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Feedback</span>
-                                <p className="text-sm text-slate-700 dark:text-slate-300">{entry.feedback}</p>
+                            <div key={entry.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-brand-mint dark:border-slate-800 shadow-sm group hover:border-brand-primary transition-colors">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="text-sm font-bold text-brand-primary flex items-center gap-2">
+                                  <MessageSquare size={16} /> Question Asked
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-medium">{new Date(entry.timestamp).toLocaleDateString()}</span>
                               </div>
-                              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded border border-emerald-100 dark:border-emerald-900/30">
-                                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 block mb-1">Improved Answer</span>
-                                <p className="text-sm text-emerald-800 dark:text-emerald-200">{entry.improvedAnswer}</p>
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-4 bg-brand-rose/30 dark:bg-slate-800/50 p-3 rounded-xl border border-brand-mint dark:border-slate-700">{entry.question}</p>
+
+                              <div className="space-y-4">
+                                <div>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Your Answer</span>
+                                  <p className="text-sm text-slate-600 dark:text-slate-400 italic">"{entry.userAudioTranscript}"</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest flex items-center gap-2 mb-2">
+                                      <Trophy size={14} /> AI Feedback
+                                    </span>
+                                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{entry.feedback}</p>
+                                  </div>
+                                  <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/20">
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                      <Sparkles size={14} /> Recommended Answer
+                                    </span>
+                                    <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">{entry.improvedAnswer}</p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           ))}
